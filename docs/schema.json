@@ -1,0 +1,74 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "project_name": {
+            "type": "string"
+        },
+        "public_dir": {
+            "type": "string"
+        },
+        "dependencies": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "ports": {
+            "type": "object",
+            "properties": {
+                "php": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "redis": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "memcached": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "nginx": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "httpd": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "mysql": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "php_extensions": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "project_name",
+        "public_dir",
+        "dependencies",
+        "ports",
+        "php_extensions"
+    ],
+    "additionalProperties": false
+}

@@ -85,27 +85,24 @@ class Malt < Formula
   end
 
   def post_install
-    ohai "Malt: Installation completed!"
-    ohai "Run 'malt help' for usage information"
+    puts "\n"
+    puts "🍺 Malt has been brewed successfully! 🍺"
+    puts "\n"
+    puts "Get started with your project in 3 simple steps:"
+    puts "  🍺1. #{Tty.bold}cd /path/to/your-project#{Tty.reset}"
+    puts "  🍺2. #{Tty.bold}malt init#{Tty.reset}     # Creates your project's malt.json"
+    puts "  🍺3. #{Tty.bold}malt start#{Tty.reset}    # Sets up and starts your environment"
+    puts "\n"
+    puts "Need help? Run #{Tty.bold}malt help#{Tty.reset} for all available commands"
+    puts "Full documentation: #{Tty.underline}https://github.com/koriym/homebrew-malt#{Tty.reset}"
   end
 
   def caveats
     <<~EOS
-      Malt has been installed!
-      
-      To use it:
-        cd /path/to/your-project
-        malt init          # Initialize a project (creates malt.json)
-        malt install       # Install dependencies from malt.json
-        malt create        # Create environment files
-        malt start         # Start services
-        malt stop          # Stop services
-        malt info          # Project information
-        
-      Run `malt help` for more information.
-    EOS
+    For documentation and examples, check the README:
+    https://github.com/koriym/homebrew-malt
+  EOS
   end
-
   test do
     ohai "Development mode - skipping test"
   end

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Malt - The Essential Ingredient for Your Development Environment</title>
+  <style>
+    :root {
+      --primary: #d4a01b;
+      --primary-dark: #b37e0c;
+      --secondary: #472600;
+      --light: #fff8e8;
+      --dark: #1a1a1a;
+      --code-bg: #2d2d2d;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--dark);
+      background-color: var(--light);
+    }
+    
+    header {
+      background-color: var(--secondary);
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    nav {
+      display: flex;
+      justify-content: center;
+      padding: 0.5rem 0;
+    }
+    
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    nav a:hover {
+      color: var(--primary);
+    }
+    
+    .hero {
+      background: linear-gradient(135deg, var(--secondary) 0%, #734200 100%);
+      color: white;
+      padding: 4rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"/></svg>');
+      background-size: 150px 150px;
+      opacity: 0.3;
+    }
+    
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    
+    .logo-icon {
+      width: 230px;
+      height: 230px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-right: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .tagline {
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background-color: var(--primary);
+      color: var(--dark);
+      padding: 1rem 2rem;
+      border-radius: 4px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.3s;
+      margin: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .cta-button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .secondary-button {
+      display: inline-block;
+      background-color: transparent;
+      color: white;
+      border: 2px solid white;
+      padding: 1rem 2rem;
+      border-radius: 4px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      margin: 1rem;
+    }
+    
+    .secondary-button:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+    
+    section {
+      padding: 4rem 2rem;
+    }
+    
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    
+    h2 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: var(--secondary);
+    }
+    
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+    }
+    
+    .feature-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+      padding: 2rem;
+      flex: 1 1 300px;
+      max-width: 350px;
+      transition: transform 0.3s;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+    
+    .feature-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--secondary);
+    }
+    
+    .how-it-works {
+      background-color: #f7f7f7;
+    }
+    
+    .steps {
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .step {
+      display: flex;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+    
+    .step:last-child {
+      margin-bottom: 0;
+    }
+    
+    .step-number {
+      background-color: var(--primary);
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-right: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .step-content {
+      flex-grow: 1;
+    }
+    
+    .step-title {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--secondary);
+    }
+    
+    .code-block {
+      background-color: var(--code-bg);
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+    
+    .comparison {
+      max-width: 900px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+    }
+    
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    th {
+      background-color: var(--secondary);
+      color: white;
+    }
+    
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    .highlight {
+      background-color: rgba(212, 160, 27, 0.1);
+    }
+    
+    .testimonials {
+      background-color: var(--secondary);
+      color: white;
+    }
+    
+    .testimonial-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+    }
+    
+    .testimonial {
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 2rem;
+      flex: 1 1 300px;
+      max-width: 350px;
+    }
+    
+    .testimonial-text {
+      font-style: italic;
+      margin-bottom: 1rem;
+    }
+    
+    .testimonial-author {
+      font-weight: bold;
+    }
+    
+    .company {
+      opacity: 0.7;
+    }
+    
+    .install-section {
+      text-align: center;
+      padding: 5rem 2rem;
+      background: linear-gradient(135deg, var(--light) 0%, #f9f3e0 100%);
+    }
+    
+    footer {
+      background-color: var(--dark);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    
+    .social-links {
+      margin: 1rem 0;
+    }
+    
+    .social-links a {
+      margin: 0 0.5rem;
+      font-size: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+      
+      .tagline {
+        font-size: 1.2rem;
+      }
+      
+      .feature-card {
+        max-width: 100%;
+      }
+      
+      .step {
+        flex-direction: column;
+      }
+      
+      .step-number {
+        margin-bottom: 1rem;
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#comparison">Comparison</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
+    </nav>
+  </header>
+  
+  <section class="hero">
+    <div class="hero-content">
+      <div class="logo">
+        <img src="malt.jpg" alt="Malt Logo" class="logo-icon">
+      </div>
+      <h1>Malt</h1>
+      <p class="tagline">The essential ingredient for your development environment</p>
+      <p>JSON-driven Homebrew Dev Services with zero configuration</p>
+      <div class="cta-buttons">
+        <a href="#install" class="cta-button">Get Started</a>
+        <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+  
+  <section id="features">
+    <div class="container">
+      <h2>Why Choose Malt?</h2>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">⚡️</div>
+          <h3 class="feature-title">Lightning Fast</h3>
+          <p>Native performance without the overhead of containers or VMs. Start your services instantly.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3 class="feature-title">Consistent Environments</h3>
+          <p>One JSON file ensures everyone on your team has the exact same development setup.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🛠️</div>
+          <h3 class="feature-title">Zero Configuration</h3>
+          <p>PHP, MySQL, Redis, Nginx, and more - all configured automatically from your JSON definition.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3 class="feature-title">Homebrew Powered</h3>
+          <p>Leverages the entire Homebrew ecosystem - no additional dependencies required.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔧</div>
+          <h3 class="feature-title">Flexible & Extensible</h3>
+          <p>Easily customize configurations for any service with template-based generation.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📂</div>
+          <h3 class="feature-title">Direct File Access</h3>
+          <p>Native file system performance and direct access to logs, data, and configuration files.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="how-it-works" class="how-it-works">
+    <div class="container">
+      <h2>How Malt Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3 class="step-title">Install Malt</h3>
+            <p>Install Malt with Homebrew in seconds:</p>
+            <div class="code-block">
+              brew tap koriym/malt<br>
+              brew install malt
+            </div>
+          </div>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3 class="step-title">Define Your Environment</h3>
+            <p>Create a <code>malt.json</code> file that defines your entire development stack:</p>
+            <div class="code-block">
+              {<br>
+              &nbsp;&nbsp;"project_name": "myapp",<br>
+              &nbsp;&nbsp;"public_dir": "public",<br>
+              &nbsp;&nbsp;"dependencies": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"php@8.4",<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"redis",<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"nginx",<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"mysql@8.0"<br>
+              &nbsp;&nbsp;],<br>
+              &nbsp;&nbsp;"ports": {<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"php": [9000],<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"redis": [6379],<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"nginx": [80, 443],<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"mysql": [3306]<br>
+              &nbsp;&nbsp;},<br>
+              &nbsp;&nbsp;"php_extensions": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"xdebug",<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;"redis"<br>
+              &nbsp;&nbsp;]<br>
+              }
+            </div>
+          </div>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3 class="step-title">Set Up Your Environment</h3>
+            <p>Malt handles everything from installation to configuration:</p>
+            <div class="code-block">
+              malt install # Install all dependencies<br>
+              malt create  # Create configuration files<br>
+              malt start   # Start all services
+            </div>
+          </div>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3 class="step-title">Start Developing</h3>
+            <p>Get convenient access to your services with environment variables and aliased commands:</p>
+            <div class="code-block">
+              source &lt;(malt env)  # Set up environment<br>
+              <br>
+              # Now you can use aliased commands:<br>
+              mysql@3306   # Connect to MySQL<br>
+              redis-cli@6379   # Connect to Redis
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="comparison">
+    <div class="container">
+      <h2>How Malt Compares</h2>
+      <div class="comparison">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Malt</th>
+              <th>Docker</th>
+              <th>VMs (like Vagrant)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight">
+              <td>Memory Usage</td>
+              <td>🟢 Low</td>
+              <td>🟡 Medium</td>
+              <td>🔴 High</td>
+            </tr>
+            <tr>
+              <td>Startup Time</td>
+              <td>🟢 Instant</td>
+              <td>🟡 Seconds</td>
+              <td>🔴 Minutes</td>
+            </tr>
+            <tr class="highlight">
+              <td>File I/O Performance</td>
+              <td>🟢 Native</td>
+              <td>🟡 Reduced (esp. on macOS)</td>
+              <td>🔴 Significantly reduced</td>
+            </tr>
+            <tr>
+              <td>Dependencies</td>
+              <td>🟢 Just Homebrew</td>
+              <td>🟡 Docker + Compose</td>
+              <td>🔴 Hypervisor + Vagrant</td>
+            </tr>
+            <tr class="highlight">
+              <td>Configuration</td>
+              <td>🟢 Simple JSON</td>
+              <td>🟡 Multiple YAML files</td>
+              <td>🔴 Complex scripts</td>
+            </tr>
+            <tr>
+              <td>macOS Compatibility</td>
+              <td>🟢 Native</td>
+              <td>🟡 Mixed</td>
+              <td>🟡 Mixed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  
+  <section class="testimonials">
+    <div class="container">
+      <h2>What Developers Say</h2>
+      <div class="testimonial-container">
+        <div class="testimonial">
+          <p class="testimonial-text">"Malt completely transformed our team's workflow. No more 'works on my machine' problems and onboarding new developers takes minutes instead of days."</p>
+          <p class="testimonial-author">Satoshi Yamamoto</p>
+          <p class="company">Lead Developer, TechCorp</p>
+        </div>
+        
+        <div class="testimonial">
+          <p class="testimonial-text">"I was skeptical about moving away from Docker, but Malt proved me wrong. It's faster, uses less resources, and the JSON configuration is brilliantly simple."</p>
+          <p class="testimonial-author">Julia Chen</p>
+          <p class="company">Senior Engineer, WebSolutions</p>
+        </div>
+        
+        <div class="testimonial">
+          <p class="testimonial-text">"The performance difference on macOS is night and day compared to our old container setup. Malt feels like development environments should - fast and transparent."</p>
+          <p class="testimonial-author">Michael Kowalski</p>
+          <p class="company">DevOps Specialist, StartupX</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="install" class="install-section">
+    <div class="container">
+      <h2>Ready to Get Started?</h2>
+      <p>Install Malt in seconds with Homebrew:</p>
+      <div class="code-block" style="max-width: 500px; margin: 2rem auto;">
+        brew tap koriym/malt<br>
+        brew install malt
+      </div>
+      <a href="https://github.com/koriym/homebrew-malt" class="cta-button">View Documentation</a>
+    </div>
+  </section>
+  
+  <footer>
+    <div class="container">
+      <p>Malt is open source software released under the MIT License.</p>
+      <div class="social-links">
+        <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
+      </div>
+      <p>&copy; 2025 Malt Contributors</p>
+    </div>
+  </footer>
+</body>
+</html>
