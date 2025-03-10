@@ -22,7 +22,7 @@ Malt leverages the entire Homebrew formula ecosystem, allowing you to declare an
 ## Installation
 
 ```bash
-brew tap username/malt
+brew tap koriym/malt
 brew install malt
 ```
 
