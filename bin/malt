@@ -1,14 +1,15 @@
 #!/usr/bin/env ruby
 
-HOMEBREW_PREFIX = ""
-MALT_SHARE_PATH = ""
-MALT_TEMPLATES_PATH = ""
+HOMEBREW_PREFIX = "{HOMEBREW_PREFIX_PLACEHOLDER}"
+MALT_SHARE_PATH = "{MALT_SHARE_PATH_PLACEHOLDER}"
+MALT_TEMPLATES_PATH = "{MALT_TEMPLATES_PATH_PLACEHOLDER}"
 
 # 開発環境ではプレースホルダーのままなので、現在のリポジトリのパスを使用
-if HOMEBREW_PREFIX == ""
+if HOMEBREW_PREFIX == "{HOMEBREW_PREFIX_PLACEHOLDER}"
   repo_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   $LOAD_PATH.unshift(File.join(repo_root, "lib"))
-  MALT_SHARE_PATH =
+  MALT_SHARE_PATH = File.join(repo_root, "share", "malt")
+  MALT_TEMPLATES_PATH = File.join(repo_root, "templates")
 else
   $LOAD_PATH.unshift(File.join(HOMEBREW_PREFIX, "lib"))
 end
