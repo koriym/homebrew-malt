@@ -1,0 +1,16 @@
+[mysqld]
+port = {{PORT}}
+socket = {{MALT_DIR}}/tmp/mysql_{{PORT}}.sock
+log-error = {{MALT_DIR}}/logs/mysql_{{PORT}}_error.log
+general_log_file = {{MALT_DIR}}/logs/mysql_{{PORT}}_general.log
+slow_query_log_file = {{MALT_DIR}}/logs/mysql_{{PORT}}_slow.log
+datadir = "{{MALT_DIR}}/var/mysql_{{INDEX}}"
+pid-file = "{{MALT_DIR}}/var/mysql_{{INDEX}}/mysqld.pid"
+
+[client]
+user = root
+port = {{PORT}}
+socket = {{MALT_DIR}}/tmp/mysql_{{PORT}}.sock
+
+[mysql]
+prompt = mysql@{{PORT}}:\d>\_

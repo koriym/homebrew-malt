@@ -1,0 +1,20 @@
+server {
+  listen {{PORT}};
+  server_name localhost;
+  root "{{DOCUMENT_ROOT}}";
+  index index.php index.html index.htm;
+
+  access_log "{{MALT_DIR}}/logs/nginx_{{PORT}}_access.log";
+  error_log "{{MALT_DIR}}/logs/nginx_{{PORT}}_error.log";
+
+  location / {
+    try_files $uri $uri/ /index.php?$query_string;
+  }
+
+  location ~ \.php$ {
+    include "{{HOMEBREW_PREFIX}}/etc/nginx/fastcgi_params";
+    fastcgi_pass 127.0.0.1:{{PHP_PORT}};
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+  }
+}

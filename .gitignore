@@ -1,0 +1,5 @@
+/malt/conf/*.tmp
+/malt/logs/
+/malt/var
+/malt/tmp
+/dump.rdb

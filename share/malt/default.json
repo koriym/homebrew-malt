@@ -1,0 +1,25 @@
+{
+  "project_name": "myapp",
+  "public_dir": "public",
+  "dependencies": [
+    "php@8.4",
+    "composer",
+    "redis",
+    "nginx",
+    "httpd",
+    "mysql@8.0"
+  ],
+  "ports": {
+    "php": [9000],
+    "redis": [6379],
+    "memcached": [11211],
+    "nginx": [80, 443],
+    "httpd": [8080, 8443],
+    "mysql": [3306]
+  },
+  "php_extensions": [
+    "xdebug",
+    "redis",
+    "apcu"
+  ]
+}
