@@ -508,7 +508,7 @@
             <h3 class="step-title">Start Developing</h3>
             <p>Get convenient access to your services with environment variables and aliased commands:</p>
             <div class="code-block">
-              source &lt;(malt env)  # Set up environment<br>
+              source <(malt env)  # Set up environment<br>
               <br>
               # Now you can use aliased commands:<br>
               mysql@3306   # Connect to MySQL<br>
@@ -516,111 +516,12 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-  
-  <section id="comparison">
-    <div class="container">
-      <h2>How Malt Compares</h2>
-      <div class="comparison">
-        <table>
-          <thead>
-            <tr>
-              <th>Feature</th>
-              <th>Malt</th>
-              <th>Docker</th>
-              <th>VMs (like Vagrant)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="highlight">
-              <td>Memory Usage</td>
-              <td>🟢 Low</td>
-              <td>🟡 Medium</td>
-              <td>🔴 High</td>
-            </tr>
-            <tr>
-              <td>Startup Time</td>
-              <td>🟢 Instant</td>
-              <td>🟡 Seconds</td>
-              <td>🔴 Minutes</td>
-            </tr>
-            <tr class="highlight">
-              <td>File I/O Performance</td>
-              <td>🟢 Native</td>
-              <td>🟡 Reduced (esp. on macOS)</td>
-              <td>🔴 Significantly reduced</td>
-            </tr>
-            <tr>
-              <td>Dependencies</td>
-              <td>🟢 Just Homebrew</td>
-              <td>🟡 Docker + Compose</td>
-              <td>🔴 Hypervisor + Vagrant</td>
-            </tr>
-            <tr class="highlight">
-              <td>Configuration</td>
-              <td>🟢 Simple JSON</td>
-              <td>🟡 Multiple YAML files</td>
-              <td>🔴 Complex scripts</td>
-            </tr>
-            <tr>
-              <td>macOS Compatibility</td>
-              <td>🟢 Native</td>
-              <td>🟡 Mixed</td>
-              <td>🟡 Mixed</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-  
-  <section class="testimonials">
-    <div class="container">
-      <h2>What Developers Say</h2>
-      <div class="testimonial-container">
-        <div class="testimonial">
-          <p class="testimonial-text">"Malt completely transformed our team's workflow. No more 'works on my machine' problems and onboarding new developers takes minutes instead of days."</p>
-          <p class="testimonial-author">Satoshi Yamamoto</p>
-          <p class="company">Lead Developer, TechCorp</p>
+
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+              <h3 class="step-title">Brew Infrastructure Code</h3>
+              <p>Use our <a href="prompt.html">Malt Prompt Brewery</a> to convert your malt.json to various infrastructure formats:</p>
+              <p>Supports Docker, Kubernetes, Terraform, Ansible and more!</p>
+          </div>
         </div>
-        
-        <div class="testimonial">
-          <p class="testimonial-text">"I was skeptical about moving away from Docker, but Malt proved me wrong. It's faster, uses less resources, and the JSON configuration is brilliantly simple."</p>
-          <p class="testimonial-author">Julia Chen</p>
-          <p class="company">Senior Engineer, WebSolutions</p>
-        </div>
-        
-        <div class="testimonial">
-          <p class="testimonial-text">"The performance difference on macOS is night and day compared to our old container setup. Malt feels like development environments should - fast and transparent."</p>
-          <p class="testimonial-author">Michael Kowalski</p>
-          <p class="company">DevOps Specialist, StartupX</p>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <section id="install" class="install-section">
-    <div class="container">
-      <h2>Ready to Get Started?</h2>
-      <p>Install Malt in seconds with Homebrew:</p>
-      <div class="code-block" style="max-width: 500px; margin: 2rem auto;">
-        brew tap koriym/malt<br>
-        brew install malt
-      </div>
-      <a href="https://github.com/koriym/homebrew-malt" class="cta-button">View Documentation</a>
-    </div>
-  </section>
-  
-  <footer>
-    <div class="container">
-      <p>Malt is open source software released under the MIT License.</p>
-      <div class="social-links">
-        <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
-      </div>
-      <p>&copy; 2025 Malt Contributors</p>
-    </div>
-  </footer>
-</body>
-</html>

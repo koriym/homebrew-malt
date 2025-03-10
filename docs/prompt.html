@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Malt Prompt Brewery</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #663300;
+      margin-bottom: 10px;
+    }
+    .tagline {
+      font-size: 1.2rem;
+      color: #666;
+    }
+    main {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+    button {
+      background-color: #663300;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #8B4513;
+    }
+    .result {
+      margin-top: 30px;
+    }
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .copy-btn {
+      background-color: #4CAF50;
+      font-size: 0.9rem;
+      padding: 6px 12px;
+    }
+    #promptResult {
+      width: 100%;
+      min-height: 200px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .hidden {
+      display: none;
+    }
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div><img src="prompt.png" width="250" alt="Malt Prompt Brewery" /></div>
+      <div class="logo">Malt Prompt Brewery</div>
+    <div class="tagline">Brewing infrastructure code prompts from your malt.json</div>
+  </header>
+
+  <main>
+    <h1>Brew AI Prompts from your malt.json</h1>
+    <p>Paste your malt.json below and select which infrastructure format you want to brew.</p>
+    
+    <textarea id="jsonInput" placeholder="Paste your malt.json here..."></textarea>
+    
+    <div class="buttons">
+      <button id="dockerBtn">Dockerfile</button>
+      <button id="composeBtn">Docker Compose</button>
+      <button id="kubernetesBtn">Kubernetes</button>
+      <button id="helmBtn">Helm Chart</button>
+      <button id="terraformBtn">Terraform</button>
+      <button id="ansibleBtn">Ansible</button>
+      <button id="cfBtn">CloudFormation</button>
+    </div>
+    
+    <div id="resultSection" class="result hidden">
+      <div class="result-header">
+        <h2 id="resultTitle">Generated Prompt</h2>
+        <button id="copyBtn" class="copy-btn">Copy to Clipboard</button>
+      </div>
+      <p>Copy this prompt to ChatGPT, Claude, or any other AI assistant:</p>
+      <div id="promptResult"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Malt by <a href="https://github.com/koriym/homebrew-malt" target="_blank">Koriym</a> | Prompt Brewery by the Community</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Elements
+      const jsonInput = document.getElementById('jsonInput');
+      const resultSection = document.getElementById('resultSection');
+      const promptResult = document.getElementById('promptResult');
+      const resultTitle = document.getElementById('resultTitle');
+      const copyBtn = document.getElementById('copyBtn');
+      
+      // Sample malt.json for easy testing
+      const sampleJson = {
+        "project_name": "myapp",
+        "public_dir": "public",
+        "dependencies": [
+          "php@8.4",
+          "composer",
+          "redis",
+          "nginx",
+          "httpd",
+          "mysql@8.0"
+        ],
+        "ports": {
+          "php": [9000],
+          "redis": [6379],
+          "memcached": [11211],
+          "nginx": [80, 443],
+          "httpd": [8080, 8443],
+          "mysql": [3306]
+        },
+        "php_extensions": [
+          "xdebug",
+          "redis",
+          "apcu"
+        ]
+      };
+      
+      // Pre-fill with sample JSON if input is empty
+      if (jsonInput.value.trim() === '') {
+        jsonInput.value = JSON.stringify(sampleJson, null, 2);
+      }
+      
+      // Button click handlers
+      document.getElementById('dockerBtn').addEventListener('click', () => generatePrompt('Dockerfile'));
+      document.getElementById('composeBtn').addEventListener('click', () => generatePrompt('Docker Compose'));
+      document.getElementById('kubernetesBtn').addEventListener('click', () => generatePrompt('Kubernetes'));
+      document.getElementById('helmBtn').addEventListener('click', () => generatePrompt('Helm Chart'));
+      document.getElementById('terraformBtn').addEventListener('click', () => generatePrompt('Terraform'));
+      document.getElementById('ansibleBtn').addEventListener('click', () => generatePrompt('Ansible'));
+      document.getElementById('cfBtn').addEventListener('click', () => generatePrompt('CloudFormation'));
+      
+      // Copy button handler
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(promptResult.textContent)
+          .then(() => {
+            copyBtn.textContent = '🍺 Copied! 🍺';
+            setTimeout(() => {
+              copyBtn.textContent = 'Copy to Clipboard';
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+          });
+      });
+      
+      // Function to generate prompts based on selected format
+      function generatePrompt(format) {
+        let jsonData;
+        
+        try {
+          jsonData = JSON.parse(jsonInput.value);
+        } catch (e) {
+          alert('Invalid JSON. Please check your input.');
+          return;
+        }
+        
+        let prompt = '';
+        
+        switch (format) {
+          case 'Dockerfile':
+            prompt = getDockerfilePrompt(jsonData);
+            break;
+          case 'Docker Compose':
+            prompt = getDockerComposePrompt(jsonData);
+            break;
+          case 'Kubernetes':
+            prompt = getKubernetesPrompt(jsonData);
+            break;
+          case 'Helm Chart':
+            prompt = getHelmPrompt(jsonData);
+            break;
+          case 'Terraform':
+            prompt = getTerraformPrompt(jsonData);
+            break;
+          case 'Ansible':
+            prompt = getAnsiblePrompt(jsonData);
+            break;
+          case 'CloudFormation':
+            prompt = getCloudFormationPrompt(jsonData);
+            break;
+        }
+        
+        // Display result
+        resultTitle.textContent = `${format} Prompt`;
+        promptResult.textContent = prompt;
+        resultSection.classList.remove('hidden');
+        
+        // Scroll to result
+        resultSection.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      // Prompt templates
+      function getDockerfilePrompt(json) {
+        return `I need to convert a Malt development environment configuration to a production-ready Dockerfile. Malt is a PHP development environment manager that uses Homebrew. Please create a multi-stage Dockerfile that replicates this environment as closely as possible for production use.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. A production-optimized Dockerfile that includes all the required PHP version, extensions, and services
+2. Use multi-stage builds for optimization
+3. Follow best practices for Docker security
+4. Include appropriate healthchecks
+5. Set up proper environment variables
+6. Configure any webserver included in the dependencies
+
+The Dockerfile should be ready to build and deploy in a production environment.`;
+      }
+      
+      function getDockerComposePrompt(json) {
+        return `I need to convert a Malt development environment configuration to a Docker Compose setup. Malt is a PHP development environment manager that uses Homebrew. Please create a docker-compose.yml file that replicates this environment.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. A complete docker-compose.yml file with all services defined in my malt.json
+2. Use appropriate official Docker images for each service
+3. Configure the necessary ports, volumes, and environment variables
+4. Set up any required networks
+5. Include healthchecks where appropriate
+6. Configure dependencies between services
+7. Set up persistent storage for databases
+
+The docker-compose.yml should be ready to use with 'docker-compose up' and should closely match my development environment.`;
+      }
+      
+      function getKubernetesPrompt(json) {
+        return `I need to convert a Malt development environment configuration to Kubernetes manifests. Malt is a PHP development environment manager that uses Homebrew. Please create Kubernetes YAML manifests that would replicate this environment in a Kubernetes cluster.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. All necessary Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets, etc.)
+2. Set up appropriate resource requests and limits
+3. Configure necessary environment variables
+4. Set up service networking and port configurations
+5. Include health probes
+6. Set up persistent volumes for databases and stateful services
+7. Use Secrets for sensitive information
+8. Include appropriate labels and selectors
+
+The manifests should be production-ready and follow Kubernetes best practices.`;
+      }
+      
+      function getHelmPrompt(json) {
+        return `I need to convert a Malt development environment configuration to a Helm chart. Malt is a PHP development environment manager that uses Homebrew. Please create a Helm chart structure that would replicate this environment in a Kubernetes cluster.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. The structure of a Helm chart with all necessary files (Chart.yaml, values.yaml, templates/)
+2. Template files for all required Kubernetes resources
+3. A well-structured values.yaml with sensible defaults
+4. Clear documentation on configurable parameters
+5. Dependencies on other charts if necessary
+6. Proper templating for flexibility and reusability
+
+The Helm chart should be production-ready and follow Helm best practices.`;
+      }
+      
+      function getTerraformPrompt(json) {
+        return `I need to convert a Malt development environment configuration to Terraform code for cloud deployment. Malt is a PHP development environment manager that uses Homebrew. Please create Terraform configuration that would deploy this environment to AWS (or suggest alternative if you think another cloud provider would be more appropriate).
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. Terraform code organized into appropriate files (main.tf, variables.tf, outputs.tf, etc.)
+2. Resources for compute instances (EC2, ECS, Fargate, or other appropriate services)
+3. Database resources for MySQL and other data stores
+4. Networking configuration (VPC, subnets, security groups)
+5. Load balancing if needed
+6. Appropriate IAM permissions
+7. Any required S3 buckets or other storage
+8. CloudWatch monitoring and alarms
+
+The Terraform code should be production-ready and follow infrastructure-as-code best practices.`;
+      }
+      
+      function getAnsiblePrompt(json) {
+        return `I need to convert a Malt development environment configuration to Ansible playbooks. Malt is a PHP development environment manager that uses Homebrew. Please create Ansible playbooks that would set up this environment on a Linux server.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. A main Ansible playbook
+2. Any necessary roles or tasks
+3. Variable files with sensible defaults
+4. Installation and configuration of all services
+5. Setting up PHP with the specified version and extensions
+6. Database configuration
+7. Web server setup
+8. Process management (systemd services)
+9. Proper handlers for service restarts
+
+The Ansible code should be production-ready and follow best practices for configuration management.`;
+      }
+      
+      function getCloudFormationPrompt(json) {
+        return `I need to convert a Malt development environment configuration to an AWS CloudFormation template. Malt is a PHP development environment manager that uses Homebrew. Please create a CloudFormation template that would deploy this environment to AWS.
+
+Here's my malt.json configuration:
+\`\`\`json
+${JSON.stringify(json, null, 2)}
+\`\`\`
+
+Please provide:
+1. A complete CloudFormation template in YAML format
+2. Resources for compute (EC2, ECS, or other appropriate services)
+3. RDS for MySQL or other database services as needed
+4. Networking (VPC, subnets, security groups)
+5. Elastic Load Balancing if needed
+6. IAM roles and policies
+7. S3 buckets if needed
+8. CloudWatch monitoring and alarms
+9. Appropriate parameters and outputs
+
+The CloudFormation template should be production-ready and follow AWS best practices.`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -238,12 +238,20 @@ One of Malt's significant advantages is its usefulness when creating production 
 
 - The JSON configuration serves as a single source of truth for your environment requirements
 - Easily generate Dockerfiles, Docker Compose files, Kubernetes manifests, or other deployment configs by providing your `malt.json` to AI tools
-- In most cases, simply asking an AI assistant to "Convert this malt.json to a Dockerfile" or "Create Kubernetes manifests based on this configuration" will produce satisfactory results
 - The declarative nature of Malt's configuration makes it ideal for AI-assisted conversion to various deployment formats
 - Dependency versions, service configurations, and environment variables are already clearly defined, making translation straightforward
 - This approach bridges the gap between development and production environments more effectively than starting from scratch
 
 This workflow is clearer and more straightforward than migrating a traditional development environment setup to containerized or orchestrated environments, and facilitates consistency across your infrastructure.
+
+#### 🍺Malt Prompt Brewery
+
+Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html). 
+
+## Documentation
+
+Full documentation is available at [https://koriym.github.io/homebrew-malt/index.html](https://koriym.github.io/homebrew-malt/index.html)
+
 
 ## License
 
