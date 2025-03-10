@@ -62,13 +62,11 @@ This creates a `malt.json` file in your project directory:
     "httpd": [8080, 8443],
     "mysql": [3306]
   },
-  "extras": {
-    "php_extensions": [
-      "xdebug",
-      "redis",
-      "apcu"
-    ]
-  }
+  "php_extensions": [
+    "xdebug",
+    "redis",
+    "apcu"
+  ]
 }
 ```
 
