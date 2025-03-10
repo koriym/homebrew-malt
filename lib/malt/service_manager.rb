@@ -40,12 +40,6 @@ module Malt
       services.each do |service|
         service.start(config)
       end
-
-      # ステータス表示
-      services.each do |service|
-        service.start(config)
-      end
-
     end
 
     def self.stop_services(config)
