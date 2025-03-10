@@ -2,6 +2,8 @@
 
 **The essential ingredient for your development environment**
 
+<img src="malt.jpg" width="180" alt="Malt">
+
 Malt is a JSON-driven development environment manager that simplifies setting up and managing web development environments using just the Homebrew ecosystem.
 
 ## Overview
