@@ -1,41 +1,36 @@
 class Malt < Formula
   desc "JSON-driven Homebrew Dev Services"
   homepage "https://github.com/koriym/homebrew-malt"
-  version "1.0.0beta4"
+  version "1.0.0beta3"
   url "file:///dev/null"
 
   depends_on "jq"
 
   def install
-    # タップのパス
-    tap_path = Tap.fetch("koriym/malt").path
-    puts("tap_path: #{__FILE__}")
-    # ローカル開発用にカレントディレクトリを考慮
     local_path = File.expand_path(File.dirname(__FILE__) + '/..')
-    puts("local_path: #{local_path}")
-    puts("tap_path: #{tap_path}")
+    install_path = Tap.fetch("koriym/malt").path
+    puts("install_path: #{install_path}")
     ohai "Installing malt..."
 
     # Copy lib files
     (lib / "malt").mkpath
-    cp_r Dir["#{tap_path}/lib/*"], lib / "malt"
-    puts("lib copied: #{tap_path}/lib/*")
+    cp_r Dir["#{install_path}/lib/*"], lib / "malt"
+    puts("lib copied: #{install_path}/lib/*")
 
     #Copy share files
     (share / "malt").mkpath
-    cp_r Dir["#{tap_path}/share/*"], share / "malt"
-    puts("share copied: #{tap_path}/share/*")
+    cp_r Dir["#{install_path}/share/*"], share / "malt"
+    puts("share copied: #{install_path}/share/*")
 
     # Copy bin/malt and replace HOMEBREW_PREFIX, MALT_SHARE_PATH, MALT_LIB_PATH
     bin_file = bin / "malt"
-    bin_content = File.read("#{tap_path}/bin/malt.rb")
-
+    bin_content = File.read("#{local_path}/bin/malt.rb")
     bin_content.gsub!(/MALT_IS_LOCAL = true/, "MALT_IS_LOCAL = false")
     # Set with the tap path
-    bin_content.gsub!(/{{MALT_LIB_PATH}}/, "#{tap_path}/lib")
-    bin_content.gsub!(/{{MALT_SHARE_PATH}}/, "#{tap_path}/share")
-    bin_content.gsub!(/{{MALT_CONFIG_PATH}}/, "#{tap_path}/share/default.json")
-    bin_content.gsub!(/{{MALT_TEMPLATES_PATH}}/, "#{tap_path}/share/templates")
+    bin_content.gsub!(/{{MALT_LIB_PATH}}/, "#{install_path}/lib")
+    bin_content.gsub!(/{{MALT_SHARE_PATH}}/, "#{install_path}/share")
+    bin_content.gsub!(/{{MALT_CONFIG_PATH}}/, "#{install_path}/share/default.json")
+    bin_content.gsub!(/{{MALT_TEMPLATES_PATH}}/, "#{install_path}/share/templates")
     bin_file.write bin_content
     if File.exist?(bin_file)
       chmod 0755, bin_file
