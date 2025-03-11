@@ -40,18 +40,16 @@ This creates a `malt.json` file in your project directory:
 
 ```json
 {
-  "project_name": "your-project",
+  "project_name": "myapp",
   "public_dir": "public",
   "dependencies": [
     "php@8.4",
+    "mysql@8.0",
     "composer",
     "redis",
     "nginx",
-    "httpd",
-    "mysql@8.0",
-    "git",
     "wget",
-    "jq"
+    "wrk"
   ],
   "ports": {
     "php": [9000],
@@ -67,6 +65,7 @@ This creates a `malt.json` file in your project directory:
     "apcu"
   ]
 }
+
 ```
 
 Customize this file to match your project requirements.

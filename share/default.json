@@ -3,22 +3,26 @@
   "public_dir": "public",
   "dependencies": [
     "php@8.4",
-    "composer",
-    "redis",
+    "mysql@8.0",
+    "httpd",
     "nginx",
-    "mysql@8.0"
+    "redis",
+    "memcached",
+    "composer"
   ],
   "ports": {
     "php": [9000],
-    "redis": [6379],
-    "memcached": [11211],
-    "nginx": [80, 443],
+    "mysql": [3306],
     "httpd": [8080, 8443],
-    "mysql": [3306]
+    "nginx": [80, 443],
+    "redis": [6379],
+    "memcached": [11211]
   },
   "php_extensions": [
     "xdebug",
+    "pcov",
     "redis",
+    "memcached",
     "apcu"
   ]
 }
