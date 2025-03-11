@@ -128,11 +128,10 @@ module Malt
       public_dir = config.document_root
       unless File.directory?(public_dir)
         FileUtils.mkdir_p(public_dir)
-
-
-        
-        
-        File.write(File.join(public_dir, "index.html"), "<html><body><h1>Malt Project: #{config.project_name}</h1></body></html>")
+        # Copy public files from template
+        template_dir = File.join(MALT_SHARE_PATH, "public")
+        FileUtils.cp_r("#{template_dir}/.", public_dir)
+        puts "Created public directory and dashboard: #{public_dir}"
       end
 
       generate_config_files(config)
