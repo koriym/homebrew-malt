@@ -1,12 +1,13 @@
 #!/usr/bin/env ruby
 
-# Malt::installで置換されます
-
 HOMEBREW_PREFIX = `brew --prefix`.strip
-MALT_IS_LOCAL = ""
 
-# 開発環境ではプレースホルダーのままなので、現在のリポジトリのパスを使用
-if MALT_IS_LOCAL == ""
+# Replace MAL_IS_LOCAL with the actual value by the installer
+# Or you can run directly in the local file (eg, `ruby bin/malt.rb`)
+MALT_IS_LOCAL = true
+
+# If MALT_IS_LOCAL is not set, use the local files
+if MALT_IS_LOCAL
   repo_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   $LOAD_PATH.unshift(File.join(repo_root, "lib"))
   MALT_SHARE_PATH = "#{repo_root}/share"
@@ -16,7 +17,7 @@ else
   MALT_SHARE_PATH = "{{MALT_SHARE_PATH}}"
   MALT_CONFIG_PATH = "{{MALT_CONFIG_PATH}}"
   MALT_TEMPLATES_PATH = "{{MALT_TEMPLATES_PATH}}"
-  $LOAD_PATH.unshift(File.join(HOMEBREW_PREFIX, "lib"))
+  $LOAD_PATH.unshift("{{MALT_LIB_PATH}}")
 end
 
 # 必要なライブラリを読み込み
