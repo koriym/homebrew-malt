@@ -6,7 +6,6 @@
     "composer",
     "redis",
     "nginx",
-    "httpd",
     "mysql@8.0"
   ],
   "ports": {
