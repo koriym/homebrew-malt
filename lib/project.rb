@@ -47,7 +47,7 @@ module Malt
       end
 
       puts "Config file created: #{config_path}"
-      puts "Edit #{config_path}, Then run 'malt create' to create the project"
+      puts "Edit malt.json to customize your environment, then run 'malt install'."
     end
 
     def self.install_deps(options)
@@ -67,12 +67,12 @@ module Malt
           installed_formulas = `brew list --formula`.split("\n")
           deps_to_install = json_data["dependencies"].reject do |dep|
             is_installed = installed_formulas.include?(dep)
-            puts "  - #{dep} (installed)" if is_installed
+            puts "[Installed] #{dep}" if is_installed
             is_installed
           end
 
           deps_to_install.each do |dep|
-            puts "  Installing #{dep}..."
+            puts "[Installing] #{dep}"
             system "brew", "install", dep, "--quiet"
             puts "    Warning: Installation of #{dep} failed" unless $?.success?
           end
@@ -92,14 +92,16 @@ module Malt
             formula_installed = installed_formulas.include?(formula_name)
 
             if formula_installed
-              puts "  - #{ext} (formula already installed)"
+              puts " [Installed] #{ext}"
             else
-              puts "  - #{ext} (installing...)"
+              puts " [Installing] #{ext}"
               system "brew", "install", formula_name, "--quiet"
               puts "    Warning: Installation of #{formula_name} failed." unless $?.success?
             end
           end
           puts "Note: Run 'php -m' to verify that extensions are properly loaded in PHP"
+          puts "All dependencies have been installed."
+          puts "Run 'malt create' to generate configuration files."
         end
       rescue JSON::ParserError => e
         puts "Invalid JSON in #{config_path}: #{e.message}"

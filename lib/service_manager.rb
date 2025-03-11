@@ -40,6 +40,9 @@ module Malt
       services.each do |service|
         service.start(config)
       end
+      puts "Services started."
+      puts "Run 'source <(malt env)' to set up your shell environment."
+      puts "See https://koriym.github.io/homebrew-malt/"
     end
 
     def self.stop_services(config)
