@@ -169,7 +169,7 @@ function getProcessIdByPort($port) {
         return '---';
     }
 
-    $command = "lsof -i:$port -t";
+    $command = "lsof -i:" . escapeshellarg($port) . " -t";
     $output = [];
     exec($command, $output, $return);
 
