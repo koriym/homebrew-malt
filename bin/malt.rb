@@ -1,16 +1,21 @@
 #!/usr/bin/env ruby
 
-HOMEBREW_PREFIX = "{HOMEBREW_PREFIX_PLACEHOLDER}"
-MALT_SHARE_PATH = "{MALT_SHARE_PATH_PLACEHOLDER}"
-MALT_TEMPLATES_PATH = "{MALT_TEMPLATES_PATH_PLACEHOLDER}"
+# Malt::installで置換されます
+
+HOMEBREW_PREFIX = `brew --prefix`.strip
+MALT_IS_LOCAL = ""
 
 # 開発環境ではプレースホルダーのままなので、現在のリポジトリのパスを使用
-if HOMEBREW_PREFIX == "{HOMEBREW_PREFIX_PLACEHOLDER}"
+if MALT_IS_LOCAL == ""
   repo_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   $LOAD_PATH.unshift(File.join(repo_root, "lib"))
-  MALT_SHARE_PATH = File.join(repo_root, "share", "malt")
-  MALT_TEMPLATES_PATH = File.join(repo_root, "templates")
+  MALT_SHARE_PATH = "#{repo_root}/share"
+  MALT_CONFIG_PATH = "#{repo_root}/share/default.json"
+  MALT_TEMPLATES_PATH = "#{repo_root}/share/templates"
 else
+  MALT_SHARE_PATH = "{{MALT_SHARE_PATH}}"
+  MALT_CONFIG_PATH = "{{MALT_CONFIG_PATH}}"
+  MALT_TEMPLATES_PATH = "{{MALT_TEMPLATES_PATH}}"
   $LOAD_PATH.unshift(File.join(HOMEBREW_PREFIX, "lib"))
 end
 
@@ -18,10 +23,10 @@ end
 require 'optparse'
 require 'json'
 require 'fileutils'
-require 'malt/config'
-require 'malt/project'
-require 'malt/template'
-require 'malt/service_manager'
+require 'config'
+require 'project'
+require 'template'
+require 'service_manager'
 
 # デフォルトのオプション
 options = {
