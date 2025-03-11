@@ -22,6 +22,7 @@ Malt leverages the entire Homebrew formula ecosystem, allowing you to declare an
 
 ```bash
 brew tap shivammathur/php
+brew tap shivammathur/extensions
 brew tap koriym/malt
 brew install malt
 ```

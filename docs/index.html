@@ -13,20 +13,20 @@
       --dark: #1a1a1a;
       --code-bg: #2d2d2d;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
       color: var(--dark);
       background-color: var(--light);
     }
-    
+
     header {
       background-color: var(--secondary);
       color: white;
@@ -37,13 +37,13 @@
       z-index: 100;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    
+
     nav {
       display: flex;
       justify-content: center;
       padding: 0.5rem 0;
     }
-    
+
     nav a {
       color: white;
       text-decoration: none;
@@ -51,11 +51,11 @@
       font-weight: 500;
       transition: color 0.3s;
     }
-    
+
     nav a:hover {
       color: var(--primary);
     }
-    
+
     .hero {
       background: linear-gradient(135deg, var(--secondary) 0%, #734200 100%);
       color: white;
@@ -64,7 +64,7 @@
       position: relative;
       overflow: hidden;
     }
-    
+
     .hero::before {
       content: '';
       position: absolute;
@@ -76,21 +76,21 @@
       background-size: 150px 150px;
       opacity: 0.3;
     }
-    
+
     .hero-content {
       max-width: 800px;
       margin: 0 auto;
       position: relative;
       z-index: 1;
     }
-    
+
     .logo {
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 2rem;
     }
-    
+
     .logo-icon {
       width: 230px;
       height: 230px;
@@ -103,19 +103,19 @@
       margin-right: 1rem;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
-    
+
     h1 {
       font-size: 3.5rem;
       margin-bottom: 1rem;
       text-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
-    
+
     .tagline {
       font-size: 1.5rem;
       margin-bottom: 2rem;
       opacity: 0.9;
     }
-    
+
     .cta-button {
       display: inline-block;
       background-color: var(--primary);
@@ -129,11 +129,11 @@
       margin: 1rem;
       box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
-    
+
     .cta-button:hover {
       background-color: var(--primary-dark);
     }
-    
+
     .secondary-button {
       display: inline-block;
       background-color: transparent;
@@ -147,34 +147,34 @@
       transition: all 0.3s;
       margin: 1rem;
     }
-    
+
     .secondary-button:hover {
       background-color: rgba(255,255,255,0.1);
     }
-    
+
     section {
       padding: 4rem 2rem;
     }
-    
+
     .container {
       max-width: 1100px;
       margin: 0 auto;
     }
-    
+
     h2 {
       font-size: 2.5rem;
       margin-bottom: 2rem;
       text-align: center;
       color: var(--secondary);
     }
-    
+
     .features {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 2rem;
     }
-    
+
     .feature-card {
       background-color: white;
       border-radius: 8px;
@@ -184,44 +184,44 @@
       max-width: 350px;
       transition: transform 0.3s;
     }
-    
+
     .feature-card:hover {
       transform: translateY(-5px);
     }
-    
+
     .feature-icon {
       font-size: 2.5rem;
       margin-bottom: 1rem;
       color: var(--primary);
     }
-    
+
     .feature-title {
       font-size: 1.5rem;
       margin-bottom: 1rem;
       color: var(--secondary);
     }
-    
+
     .how-it-works {
       background-color: #f7f7f7;
     }
-    
+
     .steps {
       display: flex;
       flex-direction: column;
       max-width: 800px;
       margin: 0 auto;
     }
-    
+
     .step {
       display: flex;
       margin-bottom: 3rem;
       position: relative;
     }
-    
+
     .step:last-child {
       margin-bottom: 0;
     }
-    
+
     .step-number {
       background-color: var(--primary);
       color: white;
@@ -237,17 +237,17 @@
       margin-right: 1.5rem;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    
+
     .step-content {
       flex-grow: 1;
     }
-    
+
     .step-title {
       font-size: 1.5rem;
       margin-bottom: 0.5rem;
       color: var(--secondary);
     }
-    
+
     .code-block {
       background-color: var(--code-bg);
       color: #f8f8f2;
@@ -256,116 +256,155 @@
       font-family: 'Courier New', monospace;
       margin: 1rem 0;
       overflow-x: auto;
+      text-align: left;
+      width: 100%;
+      max-width: 600px;
     }
-    
+
+    .install-section .code-block {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     .comparison {
       max-width: 900px;
       margin: 0 auto;
       overflow-x: auto;
     }
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin: 2rem 0;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    
+
     th, td {
-      padding: 1rem;
-      text-align: left;
+      padding: 1.2rem;
+      text-align: center;
       border-bottom: 1px solid #eee;
     }
-    
+
     th {
       background-color: var(--secondary);
       color: white;
+      font-weight: 600;
+      border-bottom: 2px solid var(--primary);
+      text-align: center;
     }
-    
+
     tr:nth-child(even) {
-      background-color: #f9f9f9;
+      background-color: #f8f8f8;
     }
-    
+
+    tr:hover {
+      background-color: #f0f0f0;
+    }
+
     .highlight {
       background-color: rgba(212, 160, 27, 0.1);
     }
-    
-    .testimonials {
-      background-color: var(--secondary);
-      color: white;
-    }
-    
-    .testimonial-container {
+
+    .indicator-wrapper {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
-      gap: 2rem;
     }
-    
-    .testimonial {
-      background-color: rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 2rem;
-      flex: 1 1 300px;
-      max-width: 350px;
+
+    .indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 8px;
+      vertical-align: middle;
+      position: static;
     }
-    
-    .testimonial-text {
-      font-style: italic;
-      margin-bottom: 1rem;
+
+    .indicator-low {
+      background-color: #4caf50;
     }
-    
-    .testimonial-author {
-      font-weight: bold;
+
+    .indicator-medium {
+      background-color: #ff9800;
     }
-    
-    .company {
-      opacity: 0.7;
+
+    .indicator-high {
+      background-color: #f44336;
     }
-    
+
+    .indicator-instant {
+      background-color: #4caf50;
+    }
+
+    .indicator-seconds {
+      background-color: #ff9800;
+    }
+
+    .indicator-minutes {
+      background-color: #f44336;
+    }
+
+    .indicator-native {
+      background-color: #4caf50;
+    }
+
+    .indicator-reduced {
+      background-color: #ff9800;
+    }
+
+    .indicator-significantly {
+      background-color: #f44336;
+    }
+
     .install-section {
       text-align: center;
       padding: 5rem 2rem;
       background: linear-gradient(135deg, var(--light) 0%, #f9f3e0 100%);
     }
-    
+
     footer {
       background-color: var(--dark);
       color: white;
       padding: 2rem;
       text-align: center;
     }
-    
+
     footer a {
       color: var(--primary);
       text-decoration: none;
     }
-    
+
     .social-links {
       margin: 1rem 0;
     }
-    
+
     .social-links a {
       margin: 0 0.5rem;
       font-size: 1.5rem;
     }
-    
+
     @media (max-width: 768px) {
       h1 {
         font-size: 2.5rem;
       }
-      
+
       .tagline {
         font-size: 1.2rem;
       }
-      
+
       .feature-card {
         max-width: 100%;
       }
-      
+
       .step {
         flex-direction: column;
       }
-      
+
       .step-number {
         margin-bottom: 1rem;
         margin-right: 0;
@@ -374,158 +413,285 @@
   </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <a href="#features">Features</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="#comparison">Comparison</a>
-      <a href="#install">Install</a>
+<header>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#comparison">Comparison</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="logo">
+      <img src="malt.jpg" alt="Malt Logo" class="logo-icon">
+    </div>
+    <h1>Malt</h1>
+    <p class="tagline">The essential ingredient for your development environment</p>
+    <p>JSON-driven Homebrew Dev Services with zero configuration</p>
+    <div class="cta-buttons">
+      <a href="#install" class="cta-button">Get Started</a>
+      <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <h2>Why Choose Malt?</h2>
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-icon">⚡️</div>
+        <h3 class="feature-title">Lightning Fast</h3>
+        <p>Native performance without the overhead of containers or VMs. Start your services instantly.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3 class="feature-title">One-Stop Access</h3>
+        <p><code>malt/</code> centralizes configs and logs, shareable with your team.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🛠️</div>
+        <h3 class="feature-title">Zero Configuration</h3>
+        <p>PHP, MySQL, Redis, Nginx, and more - all configured automatically from your JSON definition.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <h3 class="feature-title">Homebrew Powered</h3>
+        <p>Leverages the entire Homebrew ecosystem - no additional dependencies required.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔧</div>
+        <h3 class="feature-title">Flexible & Extensible</h3>
+        <p>Easily customize configurations for any service with template-based generation.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📂</div>
+        <h3 class="feature-title">Direct File Access</h3>
+        <p>Native file system performance and direct access to logs, data, and configuration files.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="how-it-works">
+  <div class="container">
+    <h2>How Malt Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3 class="step-title">Install Malt</h3>
+          <p>Install Malt with Homebrew in seconds:</p>
+          <div class="code-block">
+            brew tap shivammathur/php<br>
+            brew tap shivammathur/extensions<br>
+            brew tap koriym/malt<br>
+            brew install malt
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3 class="step-title">Define Your Environment</h3>
+          <p>Create a <code>malt.json</code> file in your project directory. It defines your entire development stack:</p>
+          <div class="code-block">
+            cd your-project<br>
+            malt init<br>
+          </div>
+          <div class="code-block">
+            {<br>
+            &nbsp;&nbsp;"project_name": "myapp",<br>
+            &nbsp;&nbsp;"public_dir": "public",<br>
+            &nbsp;&nbsp;"dependencies": [<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"php@8.4",<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"redis",<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"nginx",<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"mysql@8.0"<br>
+            &nbsp;&nbsp;],<br>
+            &nbsp;&nbsp;"ports": {<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"php": [9000],<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"redis": [6379],<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"nginx": [80, 443],<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"mysql": [3306]<br>
+            &nbsp;&nbsp;},<br>
+            &nbsp;&nbsp;"php_extensions": [<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"xdebug",<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;"redis"<br>
+            &nbsp;&nbsp;]<br>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3 class="step-title">Set Up Your Environment</h3>
+          <p>Malt handles everything from installation to configuration:</p>
+          <div class="code-block">
+            malt install # Install all dependencies<br>
+            malt create  # Create configuration files<br>
+            malt start   # Start all services
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3 class="step-title">Start Developing</h3>
+          <p>Get convenient access to your services with environment variables and aliased commands:</p>
+          <div class="code-block">
+            source <(malt env)  # Set up environment<br>
+            <br>
+            # Now you can use aliased commands:<br>
+            mysql@3306   # Connect to MySQL<br>
+            redis-cli@6379   # Connect to Redis
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h3 class="step-title">Brew Infrastructure Code</h3>
+          <p>Use our <a href="prompt.html">Malt Prompt Brewery</a> to convert your malt.json to various infrastructure formats:</p>
+          <p>Supports Docker, Kubernetes, Terraform, Ansible and more!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="comparison">
+  <div class="container">
+    <h2>Resource Usage Comparison</h2>
+    <div class="comparison">
+      <p style="text-align: center; margin-bottom: 1rem;">Lower values are better. Based on tests run on M1 MacBook Pro.</p>
+      <table style="border-collapse: separate; border-spacing: 0; width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <tr>
+          <th style="width: 20%">Solution</th>
+          <th style="width: 20%">Memory Usage</th>
+          <th style="width: 20%">Disk Space</th>
+          <th style="width: 20%">Startup Time</th>
+          <th style="width: 20%">File I/O</th>
+        </tr>
+        <tr>
+          <td><strong>Malt</strong></td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-low"></span>
+              <span style="display:inline-block; min-width:60px;">Low</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-low"></span>
+              <span style="display:inline-block; min-width:60px;">Low</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-instant"></span>
+              <span style="display:inline-block; min-width:60px;">Instant</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-native"></span>
+              <span style="display:inline-block; min-width:60px;">Native</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Docker</strong></td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-medium"></span>
+              <span style="display:inline-block; min-width:60px;">Medium-High</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-medium"></span>
+              <span style="display:inline-block; min-width:60px;">Medium</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-seconds"></span>
+              <span style="display:inline-block; min-width:60px;">Seconds</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-significantly"></span>
+              <span style="display:inline-block; min-width:60px;"><span style="display:inline-block; min-width:60px;">Critilcal on macOS</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>VM</strong></td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-high"></span>
+              <span style="display:inline-block; min-width:60px;">High</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-high"></span>
+              <span style="display:inline-block; min-width:60px;">High</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-minutes"></span>
+              <span style="display:inline-block; min-width:60px;">Minutes</span>
+            </div>
+          </td>
+          <td>
+            <div class="indicator-wrapper">
+              <span class="indicator indicator-significantly"></span>
+              <span style="display:inline-block; min-width:60px;">Significantly reduced</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="install-section">
+  <div class="container">
+    <h2>Get Started with Malt</h2>
+    <div class="code-block">
+      brew tap shivammathur/php<br>
+      brew tap koriym/malt<br>
+      brew install malt
+    </div>
+    <a href="#how-it-works" class="cta-button">Read Documentation</a>
+    <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>Malt is open source and available under the MIT License</p>
+    <div class="social-links">
       <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
-    </nav>
-  </header>
-  
-  <section class="hero">
-    <div class="hero-content">
-      <div class="logo">
-        <img src="malt.jpg" alt="Malt Logo" class="logo-icon">
-      </div>
-      <h1>Malt</h1>
-      <p class="tagline">The essential ingredient for your development environment</p>
-      <p>JSON-driven Homebrew Dev Services with zero configuration</p>
-      <div class="cta-buttons">
-        <a href="#install" class="cta-button">Get Started</a>
-        <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
-      </div>
     </div>
-  </section>
-  
-  <section id="features">
-    <div class="container">
-      <h2>Why Choose Malt?</h2>
-      <div class="features">
-        <div class="feature-card">
-          <div class="feature-icon">⚡️</div>
-          <h3 class="feature-title">Lightning Fast</h3>
-          <p>Native performance without the overhead of containers or VMs. Start your services instantly.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🔄</div>
-          <h3 class="feature-title">One-Stop Access</h3>
-          <p><code>malt/</code> centralizes configs and logs, shareable with your team.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">🛠️</div>
-          <h3 class="feature-title">Zero Configuration</h3>
-          <p>PHP, MySQL, Redis, Nginx, and more - all configured automatically from your JSON definition.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">📦</div>
-          <h3 class="feature-title">Homebrew Powered</h3>
-          <p>Leverages the entire Homebrew ecosystem - no additional dependencies required.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">🔧</div>
-          <h3 class="feature-title">Flexible & Extensible</h3>
-          <p>Easily customize configurations for any service with template-based generation.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">📂</div>
-          <h3 class="feature-title">Direct File Access</h3>
-          <p>Native file system performance and direct access to logs, data, and configuration files.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <section id="how-it-works" class="how-it-works">
-    <div class="container">
-      <h2>How Malt Works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3 class="step-title">Install Malt</h3>
-            <p>Install Malt with Homebrew in seconds:</p>
-            <div class="code-block">
-              brew tap shivammathur/php<br>
-              brew tap koriym/malt<br>
-              brew install malt
-            </div>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3 class="step-title">Define Your Environment</h3>
-            <p>Create a <code>malt.json</code> file in your project directory. It defines your entire development stack:</p>
-            <div class="code-block">
-              cd your-project<br>
-              malt init<br>
-            </div>
-            <div class="code-block">
-              {<br>
-              &nbsp;&nbsp;"project_name": "myapp",<br>
-              &nbsp;&nbsp;"public_dir": "public",<br>
-              &nbsp;&nbsp;"dependencies": [<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"php@8.4",<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"redis",<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"nginx",<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"mysql@8.0"<br>
-              &nbsp;&nbsp;],<br>
-              &nbsp;&nbsp;"ports": {<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"php": [9000],<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"redis": [6379],<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"nginx": [80, 443],<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"mysql": [3306]<br>
-              &nbsp;&nbsp;},<br>
-              &nbsp;&nbsp;"php_extensions": [<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"xdebug",<br>
-              &nbsp;&nbsp;&nbsp;&nbsp;"redis"<br>
-              &nbsp;&nbsp;]<br>
-              }
-            </div>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h3 class="step-title">Set Up Your Environment</h3>
-            <p>Malt handles everything from installation to configuration:</p>
-            <div class="code-block">
-              malt install # Install all dependencies<br>
-              malt create  # Create configuration files<br>
-              malt start   # Start all services
-            </div>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">4</div>
-          <div class="step-content">
-            <h3 class="step-title">Start Developing</h3>
-            <p>Get convenient access to your services with environment variables and aliased commands:</p>
-            <div class="code-block">
-              source <(malt env)  # Set up environment<br>
-              <br>
-              # Now you can use aliased commands:<br>
-              mysql@3306   # Connect to MySQL<br>
-              redis-cli@6379   # Connect to Redis
-            </div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-number">5</div>
-          <div class="step-content">
-              <h3 class="step-title">Brew Infrastructure Code</h3>
-              <p>Use our <a href="prompt.html">Malt Prompt Brewery</a> to convert your malt.json to various infrastructure formats:</p>
-              <p>Supports Docker, Kubernetes, Terraform, Ansible and more!</p>
-          </div>
-        </div>
+  </div>
+</footer>
+</body>
+</html>
