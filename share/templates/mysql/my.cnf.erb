@@ -1,7 +1,7 @@
 [mysqld]
 port = {{PORT}}
 socket = {{MALT_DIR}}/tmp/mysql_{{PORT}}.sock
-log-error = {{MALT_DIR}}/logs/mysql_{{PORT}}_error.log
+log-error = {{MALT_DIR}}/logs/mysql_{{PORT}}.log
 general_log_file = {{MALT_DIR}}/logs/mysql_{{PORT}}_general.log
 slow_query_log_file = {{MALT_DIR}}/logs/mysql_{{PORT}}_slow.log
 datadir = "{{MALT_DIR}}/var/mysql_{{INDEX}}"

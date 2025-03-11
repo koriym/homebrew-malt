@@ -1,27 +1,33 @@
 #!/usr/bin/env ruby
 
-HOMEBREW_PREFIX = "{HOMEBREW_PREFIX_PLACEHOLDER}"
-MALT_SHARE_PATH = "{MALT_SHARE_PATH_PLACEHOLDER}"
-MALT_TEMPLATES_PATH = "{MALT_TEMPLATES_PATH_PLACEHOLDER}"
+HOMEBREW_PREFIX = `brew --prefix`.strip
 
-# 開発環境ではプレースホルダーのままなので、現在のリポジトリのパスを使用
-if HOMEBREW_PREFIX == "{HOMEBREW_PREFIX_PLACEHOLDER}"
+# Replace MAL_IS_LOCAL with the actual value by the installer
+# Or you can run directly in the local file (eg, `ruby bin/malt.rb`)
+MALT_IS_LOCAL = true
+
+# If MALT_IS_LOCAL is not set, use the local files
+if MALT_IS_LOCAL
   repo_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   $LOAD_PATH.unshift(File.join(repo_root, "lib"))
-  MALT_SHARE_PATH = File.join(repo_root, "share", "malt")
-  MALT_TEMPLATES_PATH = File.join(repo_root, "templates")
+  MALT_SHARE_PATH = "#{repo_root}/share"
+  MALT_CONFIG_PATH = "#{repo_root}/share/default.json"
+  MALT_TEMPLATES_PATH = "#{repo_root}/share/templates"
 else
-  $LOAD_PATH.unshift(File.join(HOMEBREW_PREFIX, "lib"))
+  MALT_SHARE_PATH = "{{MALT_SHARE_PATH}}"
+  MALT_CONFIG_PATH = "{{MALT_CONFIG_PATH}}"
+  MALT_TEMPLATES_PATH = "{{MALT_TEMPLATES_PATH}}"
+  $LOAD_PATH.unshift("{{MALT_LIB_PATH}}")
 end
 
 # 必要なライブラリを読み込み
 require 'optparse'
 require 'json'
 require 'fileutils'
-require 'malt/config'
-require 'malt/project'
-require 'malt/template'
-require 'malt/service_manager'
+require 'config'
+require 'project'
+require 'template'
+require 'service_manager'
 
 # デフォルトのオプション
 options = {

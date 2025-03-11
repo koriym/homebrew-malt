@@ -31,28 +31,23 @@ module Malt
 
     def self.init(options)
       config_path = options[:config]
-
       if File.exist?(config_path)
-        puts "Config file already exists: #{config_path}"
+        puts "Config file already exists: #{config_path}."
+        puts "Run 'malt create' to create malt files."
         return
       end
-
-      project_name = File.basename(File.dirname(config_path))
-      template_path = File.join(examples_dir, "default.json")
+      template_path = MALT_CONFIG_PATH
 
       if File.exist?(template_path)
         json_content = File.read(template_path)
-        json_content.gsub!("default", project_name)
         File.write(config_path, json_content)
       else
         puts "Error: Default template not found at #{template_path}"
-        puts "Please run `cp malt.json #{config_path}` to create a config file manually"
         exit 1
       end
 
-      puts "Initialized malt.json for project: #{project_name}"
       puts "Config file created: #{config_path}"
-      puts "Run 'malt install' to install dependencies"
+      puts "Edit malt.json to customize your environment, then run 'malt install'."
     end
 
     def self.install_deps(options)
@@ -72,12 +67,12 @@ module Malt
           installed_formulas = `brew list --formula`.split("\n")
           deps_to_install = json_data["dependencies"].reject do |dep|
             is_installed = installed_formulas.include?(dep)
-            puts "  - #{dep} (installed)" if is_installed
+            puts "[Installed] #{dep}" if is_installed
             is_installed
           end
 
           deps_to_install.each do |dep|
-            puts "  Installing #{dep}..."
+            puts "[Installing] #{dep}"
             system "brew", "install", dep, "--quiet"
             puts "    Warning: Installation of #{dep} failed" unless $?.success?
           end
@@ -97,14 +92,16 @@ module Malt
             formula_installed = installed_formulas.include?(formula_name)
 
             if formula_installed
-              puts "  - #{ext} (formula already installed)"
+              puts " [Installed] #{ext}"
             else
-              puts "  - #{ext} (installing...)"
+              puts " [Installing] #{ext}"
               system "brew", "install", formula_name, "--quiet"
               puts "    Warning: Installation of #{formula_name} failed." unless $?.success?
             end
           end
           puts "Note: Run 'php -m' to verify that extensions are properly loaded in PHP"
+          puts "All dependencies have been installed."
+          puts "Run 'malt create' to generate configuration files."
         end
       rescue JSON::ParserError => e
         puts "Invalid JSON in #{config_path}: #{e.message}"
@@ -116,9 +113,14 @@ module Malt
     def self.create(options)
       config = Malt::Config.new(options[:config])
       config.validate!
-
-      project_dir = config.project_dir
       malt_dir = config.malt_dir
+
+      if Dir.exist?(malt_dir)
+        puts "Malt directory already exists: #{malt_dir}"
+        puts "Run 'malt start' to start services."
+        return
+      end
+
 
       %w(conf logs tmp var).each do |dir|
         dir_path = File.join(malt_dir, dir)
@@ -128,11 +130,15 @@ module Malt
       public_dir = config.document_root
       unless File.directory?(public_dir)
         FileUtils.mkdir_p(public_dir)
-        File.write(File.join(public_dir, "index.html"), "<html><body><h1>Malt Project: #{config.project_name}</h1></body></html>")
+        # Copy public files from template
+        template_dir = File.join(MALT_SHARE_PATH, "public")
+        FileUtils.cp_r("#{template_dir}/.", public_dir)
+        puts "Created public directory and dashboard: #{public_dir}"
       end
 
       generate_config_files(config)
       puts "Created malt files in: #{malt_dir}"
+      puts "Run 'malt start' to start services."
     end
 
     def self.start(options)
@@ -210,7 +216,7 @@ module Malt
     end
 
     def self.generate_php_configs(config)
-      template_dir_path = templates_dir
+      template_dir_path = MALT_TEMPLATES_PATH
       puts "Using templates from: #{template_dir_path}" if ENV["MALT_DEBUG"]
 
       php_fpm_template_path = File.join(template_dir_path, "php", "php-fpm.conf.erb")
