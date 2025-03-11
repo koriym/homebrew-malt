@@ -3,7 +3,7 @@ class Malt < Formula
   homepage "https://github.com/koriym/homebrew-malt"
   version "1.0.0beta2"
   url "https://github.com/koriym/homebrew-malt/archive/refs/tags/1.0.0beta2.tar.gz"
-  sha256 "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed"
+  sha256 "d265998aafceee5a9053f4bc15c237ae9c41d0e011bd72a0ea82546e6abf2d2e"
 
   depends_on "jq"
 
