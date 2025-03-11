@@ -161,6 +161,19 @@
       margin: 0 auto;
     }
 
+    .copyright {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
     h2 {
       font-size: 2.5rem;
       margin-bottom: 2rem;
@@ -361,31 +374,22 @@
       background-color: #f44336;
     }
 
-    .install-section {
-      text-align: center;
-      padding: 5rem 2rem;
-      background: linear-gradient(135deg, var(--light) 0%, #f9f3e0 100%);
-    }
-
-    footer {
-      background-color: var(--dark);
+    .github-button {
+      display: inline-block;
+      background-color: #333;
       color: white;
-      padding: 2rem;
-      text-align: center;
-    }
-
-    footer a {
-      color: var(--primary);
+      padding: 1rem 2rem;
+      border-radius: 4px;
+      font-size: 1.2rem;
+      font-weight: 600;
       text-decoration: none;
+      transition: background-color 0.3s;
+      margin: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
 
-    .social-links {
-      margin: 1rem 0;
-    }
-
-    .social-links a {
-      margin: 0 0.5rem;
-      font-size: 1.5rem;
+    .github-button:hover {
+      background-color: #555;
     }
 
     @media (max-width: 768px) {
@@ -418,7 +422,6 @@
     <a href="#features">Features</a>
     <a href="#how-it-works">How It Works</a>
     <a href="#comparison">Comparison</a>
-    <a href="#install">Install</a>
     <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
   </nav>
 </header>
@@ -426,14 +429,13 @@
 <section class="hero">
   <div class="hero-content">
     <div class="logo">
-      <img src="malt.jpg" alt="Malt Logo" class="logo-icon">
+      <img src="https://koriym.github.io/homebrew-malt/malt.jpg" alt="Malt Logo" class="logo-icon">
     </div>
     <h1>Malt</h1>
     <p class="tagline">The essential ingredient for your development environment</p>
     <p>JSON-driven Homebrew Dev Services with zero configuration</p>
     <div class="cta-buttons">
-      <a href="#install" class="cta-button">Get Started</a>
-      <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
+      <a href="https://github.com/koriym/homebrew-malt" class="github-button">View on GitHub</a>
     </div>
   </div>
 </section>
@@ -577,7 +579,7 @@
   <div class="container">
     <h2>Resource Usage Comparison</h2>
     <div class="comparison">
-      <p style="text-align: center; margin-bottom: 1rem;">Lower values are better. Based on tests run on M1 MacBook Pro.</p>
+      <p style="text-align: center; margin-bottom: 1rem;">Comparison of developer environments based on resource efficiency</p>
       <table style="border-collapse: separate; border-spacing: 0; width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
         <tr>
           <th style="width: 20%">Solution</th>
@@ -636,7 +638,7 @@
           <td>
             <div class="indicator-wrapper">
               <span class="indicator indicator-significantly"></span>
-              <span style="display:inline-block; min-width:60px;"><span style="display:inline-block; min-width:60px;">Critilcal on macOS</span>
+              <span style="display:inline-block; min-width:60px;">Critical on macOS</span>
             </div>
           </td>
         </tr>
@@ -663,35 +665,28 @@
           <td>
             <div class="indicator-wrapper">
               <span class="indicator indicator-significantly"></span>
-              <span style="display:inline-block; min-width:60px;">Significantly reduced</span>
+              <span style="display:inline-block; min-width:60px;">Low Performance</span>
             </div>
           </td>
         </tr>
       </table>
+      
+      <div style="margin-top: 1.5rem; padding: 1rem; background-color: #fff3e0; border-radius: 8px; border-left: 4px solid var(--primary);">
+        <p><strong>Note:</strong> On macOS (M1/ARM architecture), Docker must either run arm64 images natively or emulate x86 images. The file system performance in Docker on macOS is particularly impacted due to the virtualization layer.</p>
+      </div>
+      
+      <p style="text-align: center; margin-top: 2rem; font-size: 1.2rem; font-weight: 500; color: var(--secondary);">
+        Brew Better Environments with Malt: Native Performance, Simple Setup, Team Sharing
+      </p>
     </div>
   </div>
 </section>
 
-<section id="install" class="install-section">
-  <div class="container">
-    <h2>Get Started with Malt</h2>
-    <div class="code-block">
-      brew tap shivammathur/php<br>
-      brew tap koriym/malt<br>
-      brew install malt
-    </div>
-    <a href="#how-it-works" class="cta-button">Read Documentation</a>
-    <a href="https://github.com/koriym/homebrew-malt" class="secondary-button">View on GitHub</a>
-  </div>
-</section>
-
-<footer>
-  <div class="container">
-    <p>Malt is open source and available under the MIT License</p>
-    <div class="social-links">
-      <a href="https://github.com/koriym/homebrew-malt">GitHub</a>
-    </div>
-  </div>
+<footer style="background-color: var(--secondary); color: white; text-align: center; padding: 1rem 0; margin-top: 2rem;">
+  <p class="copyright">© 2025 Akihito Koriyama and contributors. Released under the <a href="https://opensource.org/licenses/MIT">MIT License</a>.</p>
+  <p style="margin-top: 0.5rem;">
+    <a href="https://github.com/koriym/homebrew-malt" style="color: var(--primary); text-decoration: none; font-weight: bold;">GitHub</a>
+  </p>
 </footer>
 </body>
 </html>
