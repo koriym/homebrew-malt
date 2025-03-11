@@ -4,7 +4,7 @@
 
 <img src="https://koriym.github.io/homebrew-malt/malt.jpg" width="180" alt="Moruko, a young girl holding malt">
 
-Malt is a JSON-driven development environment manager that simplifies setting up and managing web development environments using just the Homebrew ecosystem.
+Malt is a JSON-driven development environment manager that turns your project into shareable infrastructure code using just the Homebrew ecosystem. Define your stack in one JSON file, and let your team replicate it anywhere with the portable `malt/` directory.
 
 ## Overview
 
@@ -13,13 +13,10 @@ Malt takes a declarative approach to local development environments. Define your
 Malt leverages the entire Homebrew formula ecosystem, allowing you to declare and install any Homebrew package as a project dependency. This replaces the traditional approach of manually running individual `brew install` commands and ensures everyone on your team has exactly the same tools and services.
 
 ## Key Features
-
-- **JSON-driven configuration** for consistency and reproducibility
-- **Virtually zero dependencies** - just Homebrew (which is already standard for macOS developers)
-- **Manages multiple services** seamlessly (PHP, MySQL, Redis, Memcached, Nginx, Apache)
-- **Standardized directory structure** for logs, configs, and data
-- **Smart service management** with port detection and graceful handling
-- **Template-based config generation** with variable substitution
+- **Infrastructure as Code**: `malt/` holds your setup and logs, shareable across your team.
+- **JSON-driven config**: Ensures consistency across setups.
+- **Homebrew-powered**: No extra dependencies needed.
+- **Service management**: Handles PHP, MySQL, and more seamlessly.
 
 ## Installation
 
@@ -87,7 +84,7 @@ This installs all services and extensions defined in your `malt.json`.
 malt create
 ```
 
-This generates all necessary configuration files in a `malt` directory within your project.
+This generates all necessary configuration files in a [**malt** directory](https://github.com/koriym/homebrew-malt/tree/1.x/malt) within your project.
 
 ### 4. Start services
 
@@ -129,6 +126,8 @@ your-project/
 ├── public/         # Document root (public_dir)
 └── malt.json       # Your environment definition
 ```
+
+The `malt/` directory, paired with `malt.json`, acts as portable infrastructure code. Using project-relative placeholders, your team can clone it and deploy the same setup anywhere—no path tweaks needed.
 
 ### Version Control Considerations
 
