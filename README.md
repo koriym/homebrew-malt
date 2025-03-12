@@ -221,15 +221,19 @@ Unlike other development environment solutions, Malt:
 | Docker   | Medium-High  | Medium     | Seconds      | Reduced (especially on macOS) |
 | VM       | High         | High       | Minutes      | Significantly reduced |
 
-### Development Focus vs. Container Isolation
+### Development Focus vs Container Isolation
 
-While Docker is excellent for production and certain development scenarios, Malt challenges the assumption that such strong isolation is necessary for every development environment:
+While Docker excels in production environments and specific development scenarios, Malt was born from questioning whether such complete isolation is really necessary for all development environments:
 
-- Most web services (Apache, MySQL, etc.) are already designed to run multiple instances with different configurations
+- Almost all web services (Apache, MySQL, etc.) are already designed to run multiple instances with different configurations
+- We realized that the difficulty in using traditional native services stemmed from their dependence on global configurations, so we decided to set up configurations and logs for each project
 - Port separation is often sufficient isolation for development purposes
-- The overhead of container virtualization rarely provides tangible benefits for many development workflows
-- Organized log and data directories give you the same observability without abstraction
-- Direct file system access significantly improves quality of life for developers on macOS
+- Direct access to a comfortable file system is possible, with organized configurations, logs, and data directories
+- Easy configuration of xdebug and hot reload, which can often become complicated
+- Naturally, all virtualization issues can be fundamentally avoided
+
+Does container virtualization overhead actually provide special benefits for development workflows? If not, Malt might be what you need.
+Malt provides minimal abstraction and maximum transparency so developers can focus on what matters most.
 
 ### Production Migration Path
 
