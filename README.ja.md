@@ -1,10 +1,11 @@
 # Malt
 
-**開発環境に欠かせない重要な要素**
+**JSONによるHomebrew開発環境**
 
-<img src="https://koriym.github.io/homebrew-malt/malt.jpg" width="180" alt="麦芽を持っている若い女の子、モルコ">
+<img src="https://koriym.github.io/homebrew-malt/malt.jpg" width="180" alt="Moruko">
 
-Maltは、JSONドリブンの開発環境マネージャーで、Homebrewエコシステムだけを使用してプロジェクトを共有可能なインフラコードに変換します。スタック構成を1つのJSONファイルで定義し、ポータブルな`malt/`ディレクトリを使用してチームがどこでも再現できるようにします。
+MaltはJSON設定によりHomebrewだけで、プロジェクト単位の開発環境（IaC）を実現します。 
+スタック構成を1つのJSONファイルで定義し、ポータブルなmalt/ディレクトリを使用してチームがどこでも再現できるようにします。
 
 ## 概要
 
@@ -14,7 +15,7 @@ MaltはHomebrewフォーミュラのエコシステム全体を活用し、任�
 
 ## 主な機能
 - **Infrastructure as Code**: `malt/`がセットアップとログを保持し、チーム間で共有可能。
-- **JSONドリブン設定**: セットアップ間の一貫性を確保。
+- **JSON設定**: セットアップ間の一貫性を確保。
 - **Homebrewを活用**: 追加の依存関係が不要。
 - **サービス管理**: PHP、MySQLなどをシームレスに処理。
 
