@@ -614,6 +614,11 @@ module Malt
             main_content = main_content.gsub(original_include, temp_include)
           end
 
+          # HOMEBREW_PREFIXの置換を追加
+          if main_content.include?("{{HOMEBREW_PREFIX}}")
+            main_content = main_content.gsub("{{HOMEBREW_PREFIX}}", HOMEBREW_PREFIX)
+          end
+
           # 修正したメイン設定内容を使って一時ファイルを作成
           temp_main_path = "#{nginx_conf}.tmp"
           File.write(temp_main_path, main_content)
