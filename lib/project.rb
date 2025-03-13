@@ -254,7 +254,7 @@ module Malt
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
         end
 
-        content = nginx_main_template.render({ HOMEBREW_PREFIX: HOMEBREW_PREFIX, NGINX_INCLUDES: 'abv' })
+        content = nginx_main_template.render({ HOMEBREW_PREFIX: HOMEBREW_PREFIX, NGINX_INCLUDES: nginx_includes })
         File.write(File.join(config.malt_dir, "conf", "nginx_main.conf"), content)
       end
 
