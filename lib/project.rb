@@ -242,7 +242,7 @@ module Malt
         nginx_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx.conf.erb"))
         nginx_main_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx_main.conf.erb"))
 
-        nginx_includes = config.ports["nginx"].map { |port| "include #{config.malt_dir}/conf/nginx_#{port}.conf;" }.join("\n  ")
+        nginx_includes = config.ports["nginx"].map { |port| "include {{MALT_DIR}}/conf/nginx_#{port}.conf;" }.join("\n  ")
         config.ports["nginx"].each do |port|
           content = nginx_template.render({
                                             PORT: port,
@@ -254,7 +254,7 @@ module Malt
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
         end
 
-        content = nginx_main_template.render({ HOMEBREW_PREFIX: HOMEBREW_PREFIX, NGINX_INCLUDES: nginx_includes })
+        content = nginx_main_template.render({ HOMEBREW_PREFIX: HOMEBREW_PREFIX, NGINX_INCLUDES: 'abv' })
         File.write(File.join(config.malt_dir, "conf", "nginx_main.conf"), content)
       end
 
