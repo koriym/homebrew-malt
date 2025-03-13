@@ -248,7 +248,7 @@ module Malt
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
                                             DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
-                                            HOMEBREW_PREFIX: HOMEBREW_PREFIX,
+                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_PORT: config.ports["php"].first
                                           })
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
@@ -267,7 +267,7 @@ module Malt
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
                                             DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
-                                            HOMEBREW_PREFIX: HOMEBREW_PREFIX,
+                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_LIB_PATH: php_lib_path
                                           })
           File.write(File.join(config.malt_dir, "conf", "httpd_#{port}.conf"), content)
