@@ -242,7 +242,7 @@ module Malt
         nginx_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx.conf.erb"))
         nginx_main_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx_main.conf.erb"))
 
-        nginx_includes = config.ports["nginx"].map { |port| "include {{MALT_DIR}}/conf/nginx_#{port}.conf;" }.join("\n  ")
+        nginx_includes = config.ports["nginx"].map { |port| "include {{MALT_DIR}}/conf/nginx_#{port}.conf.tmp;" }.join("\n  ")
         config.ports["nginx"].each do |port|
           content = nginx_template.render({
                                             PORT: port,
