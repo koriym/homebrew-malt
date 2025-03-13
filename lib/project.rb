@@ -242,32 +242,32 @@ module Malt
         nginx_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx.conf.erb"))
         nginx_main_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx_main.conf.erb"))
 
-        nginx_includes = config.ports["nginx"].map { |port| "include #{config.malt_dir}/conf/nginx_#{port}.conf;" }.join("\n  ")
+        nginx_includes = config.ports["nginx"].map { |port| "include {{MALT_DIR}}/conf/nginx_#{port}.conf;" }.join("\n  ")
         config.ports["nginx"].each do |port|
           content = nginx_template.render({
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
                                             DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
-                                            HOMEBREW_PREFIX: HOMEBREW_PREFIX,
+                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_PORT: config.ports["php"].first
                                           })
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
         end
 
-        content = nginx_main_template.render({ HOMEBREW_PREFIX: HOMEBREW_PREFIX, NGINX_INCLUDES: nginx_includes })
+        content = nginx_main_template.render({ HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}", NGINX_INCLUDES: nginx_includes })
         File.write(File.join(config.malt_dir, "conf", "nginx_main.conf"), content)
       end
 
       if config.ports["httpd"]
         httpd_template = Malt::Template.new(File.join(templates_dir, "httpd", "httpd.conf.erb"))
-        php_lib_path = "#{HOMEBREW_PREFIX}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so"
+        php_lib_path = "{{HOMEBREW_PREFIX}}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so"
 
         config.ports["httpd"].each do |port|
           content = httpd_template.render({
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
                                             DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
-                                            HOMEBREW_PREFIX: HOMEBREW_PREFIX,
+                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_LIB_PATH: php_lib_path
                                           })
           File.write(File.join(config.malt_dir, "conf", "httpd_#{port}.conf"), content)

@@ -8,5 +8,6 @@ http {
   sendfile on;
   keepalive_timeout 65;
 
+  # Include the server configuration
   {{NGINX_INCLUDES}}
 }
