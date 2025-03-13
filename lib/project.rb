@@ -260,7 +260,7 @@ module Malt
 
       if config.ports["httpd"]
         httpd_template = Malt::Template.new(File.join(templates_dir, "httpd", "httpd.conf.erb"))
-        php_lib_path = "#{HOMEBREW_PREFIX}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so"
+        php_lib_path = "{{HOMEBREW_PREFIX}}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so"
 
         config.ports["httpd"].each do |port|
           content = httpd_template.render({
