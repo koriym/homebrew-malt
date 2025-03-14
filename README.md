@@ -7,9 +7,28 @@
 Malt is a JSON-driven development environment manager that creates project-specific development environments (IaC) using only Homebrew.
 Define your stack in one JSON file, and let your team replicate it anywhere with the portable `malt/` directory.
 
+## Motivation
+
+Docker is an excellent containerization tool, but we questioned whether its full isolation approach is always necessary for local development:
+
+- macOS developers often face performance issues (slow filesystem I/O through volume mounts)
+- Full containers can be overkill for many development workflows
+- Tools like Devbox.json are emerging specifically for development environments
+
+Malt offers a lightweight alternative that:
+- Creates project-specific environments with minimal overhead
+- Runs services natively while maintaining isolation between projects
+- Works alongside Docker when needed for complex integration scenarios
+
+Rather than replacing containers, Malt complements them by focusing on what matters during the development phase: speed, transparency, and simplicity.
+
 ## Overview
 
 Malt takes a declarative approach to local development environments. Define your entire stack in a single JSON file - PHP version, web servers, databases, caching solutions, extensions, and even development tools like git or wget - and Malt handles the rest. No complicated setup scripts, no environment inconsistencies, just simple JSON.
+
+Malt focuses specifically on service installation and control, rather than trying to be a complete development environment solution. This focused approach helps keep it lightweight and straightforward.
+
+Think of `malt.json` as your infrastructure's `composer.json` - it serves as the Single Source of Truth for your project's infrastructure dependencies. Just as `composer install` pulls in your PHP dependencies, `malt install && malt start` sets up your infrastructure dependencies.
 
 Malt leverages the entire Homebrew formula ecosystem, allowing you to declare and install any Homebrew package as a project dependency. This replaces the traditional approach of manually running individual `brew install` commands and ensures everyone on your team has exactly the same tools and services.
 
@@ -18,6 +37,8 @@ Malt leverages the entire Homebrew formula ecosystem, allowing you to declare an
 - **JSON-driven config**: Ensures consistency across setups.
 - **Homebrew-powered**: No extra dependencies needed.
 - **Service management**: Handles PHP, MySQL, and more seamlessly.
+- **Native performance**: Direct filesystem access without virtualization overhead.
+- **Selective isolation**: Port-based separation without heavy containers.
 
 ## Installation
 
@@ -66,7 +87,6 @@ This creates a `malt.json` file in your project directory:
     "apcu"
   ]
 }
-
 ```
 
 Customize this file to match your project requirements.
@@ -140,7 +160,6 @@ malt/logs/
 malt/tmp/
 malt/var/
 malt/conf/*.tmp
-malt/conf/*.temp
 ```
 
 This ensures that your environment definition is shared with the team, but temporary files, logs, and runtime data aren't included in your repository.
@@ -181,7 +200,7 @@ Malt automatically creates symlinks to the specific versions of each binary you'
 
 - `php` → `php@8.4` (your project's specific PHP version)
 - `mysql` → `mysql@8.0` (the MySQL version specified in your project)
-- `redis-cli` → Your project's Redis version
+- `redis-cli` → Your project's Redis port
 - And so on for all defined dependencies
 
 This ensures that you're always using the correct version for your project without having to specify it manually.
@@ -197,6 +216,36 @@ alias redis-cli@6379="redis-cli -h 127.0.0.1 -p 6379"
 
 This is particularly useful when working with multiple instances of the same service (e.g., `mysql@3306`, `mysql@3307`) simultaneously. You can easily switch between different database instances without having to remember complex connection strings or configuration file paths. Just use the port-specific alias and you're immediately connected to the right instance with all the correct settings.
 
+## FAQ
+
+### How does Malt solve the "works on my machine" problem?
+
+While Docker solves this through complete isolation, Malt takes a different approach:
+
+1. **Declarative dependencies** - Your `malt.json` explicitly defines all required services and versions
+2. **Shared configuration** - The `malt/` directory contains all environment-specific settings
+3. **Version-specific binaries** - Malt ensures everyone uses the exact same versions for each project
+
+The key difference is that Malt achieves this consistency while maintaining native performance and transparency.
+
+### Is Malt an alternative to Docker?
+
+No, they serve different purposes and can coexist:
+
+- Use **Malt** for daily development when you need speed and transparency
+- Use **Docker** for integration testing, staging, and production environments
+
+Many teams use both: Malt for rapid development cycles and Docker for ensuring production similarity in later stages.
+
+### Can I use Malt alongside Docker in the same project?
+
+Absolutely! You can:
+- Develop core components with Malt for speed
+- Run integration tests with Docker
+- Use Malt-generated configurations as a base for creating Dockerfiles
+
+This combined approach gives you the best of both worlds.
+
 ## Why Malt?
 
 Unlike other development environment solutions, Malt:
@@ -205,7 +254,6 @@ Unlike other development environment solutions, Malt:
   - Minimal memory footprint compared to Docker or VMs
   - Native file system performance (especially important on macOS)
   - Direct access to logs, data, and configuration files without abstraction layers
-  - No port mapping complexity or networking layers
   - Instant startup times with no virtualization overhead
   - Direct access to native binaries and tools
 - Has virtually zero dependencies - just Homebrew, which is already standard for macOS developers
@@ -222,40 +270,37 @@ Unlike other development environment solutions, Malt:
 | Docker   | Medium-High  | Medium     | Seconds      | Reduced (especially on macOS) |
 | VM       | High         | High       | Minutes      | Significantly reduced |
 
-### Development Focus vs Container Isolation
+### Malt vs Devbox.json
 
-While Docker excels in production environments and specific development scenarios, Malt was born from questioning whether such complete isolation is really necessary for all development environments:
+Both Malt and Devbox.json use JSON to define development environments, but with different approaches:
 
-- Almost all web services (Apache, MySQL, etc.) are already designed to run multiple instances with different configurations
-- We realized that the difficulty in using traditional native services stemmed from their dependence on global configurations, so we decided to set up configurations and logs for each project
-- Port separation is often sufficient isolation for development purposes
-- Direct access to a comfortable file system is possible, with organized configurations, logs, and data directories
-- Easy configuration of xdebug and hot reload, which can often become complicated
-- Naturally, all virtualization issues can be fundamentally avoided
+| Feature | Malt | Devbox.json |
+|---------|------|------------|
+| **Ecosystem** | Homebrew packages | Nix packages |
+| **Focus** | Service installation and control | Broader development environment |
+| **Configuration** | Simple JSON structure | More complex schema |
+| **Service Management** | Built-in service controls | Less focus on running services |
+| **Project Structure** | Creates `malt/` with configs/logs | Minimal filesystem changes |
 
-Does container virtualization overhead actually provide special benefits for development workflows? If not, Malt might be what you need.
-Malt provides minimal abstraction and maximum transparency so developers can focus on what matters most.
+Malt is ideal for:
+- Projects with multiple interdependent services needing management
+- Teams seeking direct access to logs and configurations
+- Simpler service-oriented development environments
 
-### Production Migration Path
+Devbox.json may be better for:
+- Teams looking for broader environment management
+- Projects with complex dependency graphs
+- More comprehensive development environments
 
-One of Malt's significant advantages is its usefulness when creating production deployment configurations:
-
-- The JSON configuration serves as a single source of truth for your environment requirements
-- Easily generate Dockerfiles, Docker Compose files, Kubernetes manifests, or other deployment configs by providing your `malt.json` to AI tools
-- The declarative nature of Malt's configuration makes it ideal for AI-assisted conversion to various deployment formats
-- Dependency versions, service configurations, and environment variables are already clearly defined, making translation straightforward
-- This approach bridges the gap between development and production environments more effectively than starting from scratch
-
-This workflow is clearer and more straightforward than migrating a traditional development environment setup to containerized or orchestrated environments, and facilitates consistency across your infrastructure.
+Both tools are cross-platform and offer declarative configuration.
 
 #### 🍺Malt Prompt Brewery
 
-Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html). 
+Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html).
 
 ## Documentation
 
 Full documentation is available at [https://koriym.github.io/homebrew-malt/index.html](https://koriym.github.io/homebrew-malt/index.html)
-
 
 ## License
 
