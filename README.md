@@ -220,13 +220,13 @@ This is particularly useful when working with multiple instances of the same ser
 
 ### How does Malt solve the "works on my machine" problem?
 
-While Docker solves this through complete isolation, Malt takes a different approach:
+For well-structured applications, Malt addresses most environment inconsistencies without Docker's full isolation:
 
-1. **Declarative dependencies** - Your `malt.json` explicitly defines all required services and versions
-2. **Shared configuration** - The `malt/` directory contains all environment-specific settings
-3. **Version-specific binaries** - Malt ensures everyone uses the exact same versions for each project
+1. **Version consistency** - Same versions of services and tools via `malt.json`
+2. **Configuration consistency** - Standardized settings in the `malt/` directory
+3. **Project isolation** - Clear separation between different projects
 
-The key difference is that Malt achieves this consistency while maintaining native performance and transparency.
+This approach is sufficient for most modern applications, while maintaining better performance and transparency than containers. For highly coupled systems with complex OS dependencies, Docker might still be necessary - and can be used alongside Malt when needed.
 
 ### Is Malt an alternative to Docker?
 
