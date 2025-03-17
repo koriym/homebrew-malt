@@ -25,7 +25,7 @@ This command will install the specified PHP versions, Xdebug, and the additional
 You can customize the PHP versions and extensions installed by PHP Complete by modifying the formula file.
 
 ```shell
-brew edit phpcompelete
+brew edit phpcomplete
 ```
 
 When you have finished editing, reinstall to reflect the changes.
