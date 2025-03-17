@@ -51,6 +51,7 @@ def show_help
   puts "  create                 Create malt environment in project directory"
   puts "  start                  Start services"
   puts "  stop                   Stop services"
+  puts "  kill                   Forcibly stop all services"
   puts "  source <(malt env)     Set up service paths"
   puts "  info                   Show information about the current project"
   puts "  help                   Show this help message"
@@ -105,6 +106,8 @@ begin
     Malt::ServiceManager.start(options)
   when "stop"
     Malt::ServiceManager.stop(options)
+  when "kill"
+    Malt::ServiceManager.kill(options)
   when "env"
     puts Malt::Project.env_script(options)
   when "info"

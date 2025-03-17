@@ -17,6 +17,13 @@ module Malt
       stop_services(config)
     end
 
+    def self.kill(options)
+      config_path = find_config_in_current_dir(options)
+      config = Malt::Config.new(config_path)
+
+      kill_services(config)
+    end
+
     private
 
     def self.find_config_in_current_dir(options)
@@ -54,6 +61,60 @@ module Malt
       # 各サービスを停止
       services.each do |service|
         service.stop(config)
+      end
+    end
+    
+    def self.kill_services(config)
+      puts "Checking for running services..."
+      
+      any_service_killed = false
+      
+      # Forcibly terminate PHP processes
+      if system("pgrep -f php-fpm >/dev/null 2>&1")
+        puts "Forcibly terminating PHP-FPM..."
+        system("pkill -f php-fpm")
+        any_service_killed = true
+      end
+      
+      # Forcibly terminate MySQL processes
+      if system("pgrep -f 'mysqld' >/dev/null 2>&1")
+        puts "Forcibly terminating MySQL..."
+        system("#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqladmin -uroot -h127.0.0.1 shutdown 2>/dev/null || pkill -f 'mysqld'")
+        any_service_killed = true
+      end
+      
+      # Forcibly terminate Redis processes
+      if system("pgrep -f redis-server >/dev/null 2>&1")
+        puts "Forcibly terminating Redis..."
+        system("#{HOMEBREW_PREFIX}/bin/redis-cli shutdown 2>/dev/null || pkill -f redis-server")
+        any_service_killed = true
+      end
+      
+      # Forcibly terminate Memcached processes
+      if system("pgrep -f memcached >/dev/null 2>&1")
+        puts "Forcibly terminating Memcached..."
+        system("pkill -f memcached")
+        any_service_killed = true
+      end
+      
+      # Forcibly terminate Nginx processes
+      if system("pgrep -f nginx >/dev/null 2>&1")
+        puts "Forcibly terminating Nginx..."
+        system("#{HOMEBREW_PREFIX}/bin/nginx -s stop 2>/dev/null || pkill -f nginx")
+        any_service_killed = true
+      end
+      
+      # Forcibly terminate Apache processes
+      if system("pgrep -f httpd >/dev/null 2>&1")
+        puts "Forcibly terminating Apache HTTPD..."
+        system("pkill -f httpd")
+        any_service_killed = true
+      end
+      
+      if any_service_killed
+        puts "All services have been forcibly stopped."
+      else
+        puts "No running services found."
       end
     end
 
