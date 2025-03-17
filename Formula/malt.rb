@@ -1,7 +1,7 @@
 class Malt < Formula
   desc "JSON-driven Homebrew Dev Services"
   homepage "https://github.com/koriym/homebrew-malt"
-  version "1.0.0beta4"
+  version "1.0.0beta5"
   url "file:///dev/null"
 
   depends_on "jq"

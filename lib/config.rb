@@ -29,7 +29,7 @@ module Malt
       if php_dep
         php_dep.split('@')[1]
       else
-        "8.4" # デフォルト値
+        "8.4" # Default value
       end
     end
 
@@ -63,12 +63,12 @@ module Malt
     end
 
     def validate!
-      # 必須項目の確認
+      # Verify required fields
       unless @project_name && !@project_name.empty?
         raise "Missing project_name in config"
       end
 
-      # ポート設定の確認
+      # Verify port settings
       unless has_service?("php")
         raise "Missing PHP ports in config"
       end

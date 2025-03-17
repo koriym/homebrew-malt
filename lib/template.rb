@@ -17,7 +17,7 @@ module Malt
       begin
         result = @template.dup
 
-        # {{変数名}}形式の変数を置換
+        # Replace variables in {{variable_name}} format
         variables.each do |key, value|
           result.gsub!(/\{\{#{key}\}\}/, value.to_s)
         end

@@ -20,7 +20,7 @@ else
   $LOAD_PATH.unshift("{{MALT_LIB_PATH}}")
 end
 
-# 必要なライブラリを読み込み
+# Load required libraries
 require 'optparse'
 require 'json'
 require 'fileutils'
@@ -29,17 +29,17 @@ require 'project'
 require 'template'
 require 'service_manager'
 
-# デフォルトのオプション
+# Default options
 options = {
   config: nil,
   verbose: false,
   debug: false
 }
 
-# サブコマンドとオプションの解析
+# Parse subcommand and options
 command = ARGV.shift
 
-# ヘルプメッセージ
+# Help message
 def show_help
   puts "Malt - JSON-driven development environment manager"
   puts ""
@@ -49,8 +49,9 @@ def show_help
   puts "  init                   Initialize a new malt.json file"
   puts "  install                Install dependencies from malt.json"
   puts "  create                 Create malt environment in project directory"
-  puts "  start                  Start services"
-  puts "  stop                   Stop services"
+  puts "  start                  Start services configured in malt.json"
+  puts "  stop                   Stop services configured in malt.json"
+  puts "  kill                   Forcibly stop all services (not limited to malt.json config)"
   puts "  source <(malt env)     Set up service paths"
   puts "  info                   Show information about the current project"
   puts "  help                   Show this help message"
@@ -62,7 +63,7 @@ def show_help
   puts "  --help, -h             Show this help message"
 end
 
-# オプションの解析
+# Parse options
 OptionParser.new do |opts|
   opts.on("-c", "--config=FILE", "Specify config file") do |file|
     options[:config] = file
@@ -83,16 +84,16 @@ OptionParser.new do |opts|
   end
 end.parse!(ARGV)
 
-# コマンドが指定されていない場合はヘルプを表示
+# Show help if no command is specified
 if command.nil? || command == "help"
   show_help
   exit
 end
 
-# デフォルトの設定ファイルパス
+# Default config file path
 options[:config] ||= File.join(Dir.pwd, 'malt.json')
 
-# プロジェクトの初期化
+# Initialize project
 begin
   case command
   when "init"
@@ -105,6 +106,8 @@ begin
     Malt::ServiceManager.start(options)
   when "stop"
     Malt::ServiceManager.stop(options)
+  when "kill"
+    Malt::ServiceManager.kill(options)
   when "env"
     puts Malt::Project.env_script(options)
   when "info"
