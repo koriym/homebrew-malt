@@ -1,6 +1,6 @@
 module Malt
   class ServiceManager
-    # Homebrew プレフィックス
+    # Homebrew prefix
     HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || "/opt/homebrew"
 
     def self.start(options)
@@ -40,10 +40,10 @@ module Malt
     def self.start_services(config)
       puts "Starting services for #{config.project_name}..."
 
-      # サービスを登録
+      # Register services
       services = register_services(config)
 
-      # 各サービスを起動
+      # Start each service
       services.each do |service|
         service.start(config)
       end
@@ -55,10 +55,10 @@ module Malt
     def self.stop_services(config)
       puts "Stopping services for #{config.project_name}..."
 
-      # サービスを登録（停止は逆順）
+      # Register services (stop in reverse order)
       services = register_services(config).reverse
 
-      # 各サービスを停止
+      # Stop each service
       services.each do |service|
         service.stop(config)
       end
@@ -118,7 +118,7 @@ module Malt
       end
     end
 
-    # サービスを登録
+    # Register services
     def self.register_services(config)
       services = []
 
@@ -143,16 +143,16 @@ module Malt
       services
     end
 
-    # サービス基底クラス
+    # Base service class
     class BaseService
-      # 設定ファイルを変数展開して一時ファイルに書き出す
+      # Create temporary config file with variable expansion
       def create_temp_config(config, config_path)
         return create_temp_config_with_extras(config, config_path, {})
       end
 
-      # ポートが使用中かどうかを確認
+      # Check if a port is already in use
       def port_in_use?(port)
-        # macOSとLinuxで異なるコマンドを使用
+        # Use different commands for macOS and Linux
         if RUBY_PLATFORM =~ /darwin/
           # macOS
           system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")
@@ -162,14 +162,14 @@ module Malt
         end
       end
 
-      # 追加の変数を指定して設定ファイルを変数展開
+      # Create temporary config file with extra variable substitutions
       def create_temp_config_with_extras(config, config_path, extra_vars = {})
         unless File.exist?(config_path)
           puts "Error: Configuration file not found: #{config_path}"
           return nil
         end
 
-        # テンプレート変数を設定
+        # Set template variables
         template_vars = {
           "MALT_DIR" => config.malt_dir,
           "PROJECT_DIR" => config.project_dir,
@@ -179,7 +179,7 @@ module Malt
           "HOMEBREW_PREFIX" => HOMEBREW_PREFIX
         }
 
-        # デバッグ出力 - 変数の値を確認
+        # Debug output - check variable values
         if ENV["MALT_DEBUG"]
           puts "Template variables:"
           template_vars.each do |key, value|
@@ -187,23 +187,22 @@ module Malt
           end
         end
 
-        # 絶対に置換が行われるよう絶対パスを全て文字列として扱う
+        # Treat all absolute paths as strings to ensure they are properly replaced
         template_vars.each do |key, value|
           template_vars[key] = value.to_s if !value.nil?
         end
 
-        # 追加の変数を統合
+        # Merge in additional variables
         template_vars.merge!(extra_vars)
 
-        # 一時ファイルのパス（オリジナルと同じディレクトリ）
+        # Temporary file path (in the same directory as the original)
         temp_path = "#{config_path}.tmp"
 
-        # envsubstを使って環境変数を展開し、一時ファイルに書き出す
-        # 単純な文字列置換で環境変数を展開
+        # Read the original file and perform variable substitution
         begin
           content = File.read(config_path)
 
-          # 省略可能なデバッグ出力
+          # Optional debug output
           if ENV["MALT_DEBUG"]
             puts "Original config content:"
             puts content
@@ -213,10 +212,10 @@ module Malt
             end
           end
 
-          # 変数置換
+          # Variable substitution
           puts "Replacing template variables in content:" if ENV["MALT_DEBUG"]
           template_vars.each do |key, value|
-            # {{VARIABLE}} 形式の置換
+            # {{VARIABLE}} style substitution
             if content.include?("{{#{key}}}")
               puts "  Replacing {{#{key}}} with '#{value}'" if ENV["MALT_DEBUG"]
               content = content.gsub("{{#{key}}}", value)
@@ -225,15 +224,15 @@ module Malt
             end
           end
 
-          # 省略可能なデバッグ出力
+          # Optional debug output
           if ENV["MALT_DEBUG"]
             puts "Processed config content:"
             puts content
           end
 
-          # 一時ファイルに書き込み
+          # Write to temporary file
           begin
-            # オリジナルと同じディレクトリに作成
+            # Create in the same directory as the original
             puts "Writing temporary file: #{temp_path}" if ENV["MALT_DEBUG"]
             File.write(temp_path, content)
             if File.exist?(temp_path)
@@ -254,12 +253,12 @@ module Malt
         end
       end
 
-      # 一時設定ファイルの削除
+      # Remove temporary config file
       def remove_temp_config(temp_path)
         FileUtils.rm(temp_path) if File.exist?(temp_path)
       end
 
-      # 特定のパターンに一致する一時ファイルを全て削除
+      # Remove all temporary files matching a pattern
       def cleanup_temp_files(config, pattern)
         temp_files = Dir.glob(File.join(config.conf_dir, pattern))
         temp_files.each do |file|
@@ -269,7 +268,7 @@ module Malt
       end
     end
 
-    # PHPサービスクラス
+    # PHP service class
     class PhpService < BaseService
       def start(config)
         config.ports["php"].each do |port|
@@ -284,7 +283,7 @@ module Malt
       private
 
       def start_php_fpm(config, port)
-        # ポートが既に使用中かチェック
+        # Check if port is already in use
         if port_in_use?(port)
           puts "[Running] PHP-FPM on port #{port}"
           return
@@ -292,20 +291,20 @@ module Malt
 
         puts "Starting PHP-FPM on port #{port}..."
 
-        # 設定ファイルのパス
+        # Configuration file paths
         php_fpm_conf = File.join(config.conf_dir, "php-fpm_#{port}.conf")
         php_ini = File.join(config.conf_dir, "php.ini")
 
-        # 設定ファイルが存在するか確認
+        # Verify config file exists
         unless File.exist?(php_fpm_conf)
           puts "PHP-FPM configuration file not found at: #{php_fpm_conf}"
           return
         end
 
-        # 設定ファイルを環境変数展開して一時ファイルを作成
+        # Create temporary config file with variable expansion
         temp_conf = create_temp_config(config, php_fpm_conf)
 
-        # 一時ファイルが生成できなかった場合はエラー
+        # Error if temporary file creation failed
         if temp_conf.nil?
           puts "Error: Failed to create temporary config file for PHP-FPM"
           return
@@ -313,7 +312,7 @@ module Malt
 
         puts "Using PHP-FPM config file: #{temp_conf}"
 
-        # 一時ファイルを使用して起動
+        # Start using temporary file
         cmd = "#{HOMEBREW_PREFIX}/opt/php@#{config.php_version}/sbin/php-fpm -y #{temp_conf} -c #{php_ini}"
         system("#{cmd} &")
       end
@@ -323,7 +322,7 @@ module Malt
           puts "Stopping PHP-FPM..."
           system("pkill -f php-fpm")
 
-          # 一時ファイルをクリーンアップ
+          # Clean up temporary files
           if Dir.exist?(File.join(Dir.pwd, "malt", "conf"))
             Dir.glob(File.join(Dir.pwd, "malt", "conf", "php-fpm_*.conf.tmp")).each do |tmp_file|
               puts "Cleaning up temporary file: #{tmp_file}" if ENV["MALT_DEBUG"]
@@ -336,9 +335,7 @@ module Malt
       end
     end
 
-    # MySQLサービスクラス
-    # MySQLサービスクラス
-    # MySQLサービスクラス
+    # MySQL service class
     class MysqlService < BaseService
       def start(config)
         config.ports["mysql"].each_with_index do |port, index|
@@ -449,7 +446,7 @@ module Malt
       end
     end
 
-    # Redisサービスクラス
+    # Redis service class
     class RedisService < BaseService
       def start(config)
         config.ports["redis"].each do |port|
@@ -466,7 +463,7 @@ module Malt
       private
 
       def start_redis(config, port)
-        # ポートが既に使用中かチェック
+        # Check if port is already in use
         if port_in_use?(port)
           puts "[Running] Redis on port #{port}"
           return
@@ -476,16 +473,16 @@ module Malt
 
         redis_conf = File.join(config.conf_dir, "redis_#{port}.conf")
 
-        # 設定ファイルが存在するか確認
+        # Verify config file exists
         unless File.exist?(redis_conf)
           puts "Redis configuration file not found at: #{redis_conf}"
           return
         end
 
-        # Redis用にtmpディレクトリが存在することを確認
+        # Ensure tmp directory exists for Redis
         FileUtils.mkdir_p(File.join(config.malt_dir, "tmp"))
 
-        # logsディレクトリも確認
+        # Ensure logs directory exists
         FileUtils.mkdir_p(File.join(config.malt_dir, "logs"))
 
         # デバッグ出力設定を保存
@@ -539,33 +536,30 @@ module Malt
           temp_conf = nil
         end
 
-        # デバッグ設定を元に戻す
-        ENV["MALT_DEBUG"] = old_debug
-
-        # 一時ファイルが生成できなかった場合はエラー
+        # Use original config if temporary creation failed
         if temp_conf.nil?
           puts "Error: Failed to create temporary config file for Redis. Using original config."
           temp_conf = redis_conf
         end
 
-        # 一時ファイルを使用して起動
+        # Start Redis with temporary config
         cmd = "redis-server #{temp_conf}"
         puts "Running command: #{cmd}"
         system("#{cmd} &")
       end
 
       def stop_redis(port)
-        # 特定のポートでRedisが実行中か確認
+        # Check if Redis is running on the specific port
         if port_in_use?(port)
           puts "Stopping Redis on port #{port}..."
 
-          # 関連する一時設定ファイルを見つける
+          # Find the temporary config file
           redis_conf_tmp = File.join(Dir.pwd, "malt", "conf", "redis_#{port}.conf.tmp")
 
-          # 特定のポートのRedisサーバーを停止
+          # Stop the Redis server on the specific port
           stop_success = system("#{HOMEBREW_PREFIX}/bin/redis-cli -p #{port} shutdown")
 
-          # Redisの停止が成功したら、対応する一時ファイルを削除
+          # Clean up temporary file if Redis was stopped successfully
           if stop_success && !ENV["MALT_DEBUG"] && File.exist?(redis_conf_tmp)
             puts "Cleaning up temporary Redis config: #{redis_conf_tmp}" if ENV["MALT_DEBUG"]
             remove_temp_config(redis_conf_tmp)
@@ -576,7 +570,7 @@ module Malt
       end
     end
 
-    # Memcachedサービスクラス
+    # Memcached service class
     class MemcachedService < BaseService
       def start(config)
         config.ports["memcached"].each do |port|
@@ -617,7 +611,7 @@ module Malt
       end
     end
 
-    # Nginxサービスクラス
+    # Nginx service class
     class NginxService < BaseService
       def start(config)
         start_nginx(config)
@@ -735,7 +729,7 @@ module Malt
       end
     end
 
-    # Apacheサービスクラス
+    # Apache service class
     class HttpdService < BaseService
       def start(config)
         config.ports["httpd"].each do |port|
