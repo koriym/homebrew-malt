@@ -485,56 +485,8 @@ module Malt
         # Ensure logs directory exists
         FileUtils.mkdir_p(File.join(config.malt_dir, "logs"))
 
-        # デバッグ出力設定を保存
-        old_debug = ENV["MALT_DEBUG"]
-
-        # 設定ファイルを変数展開して一時ファイルを作成
-        puts "Creating Redis temporary config file from: #{redis_conf}" if ENV["MALT_DEBUG"]
-
-        # 直接設定ファイルを読み込んで置換
-        begin
-          redis_content = File.read(redis_conf)
-
-          # 一時ファイルパス
-          temp_path = "#{redis_conf}.tmp"
-
-          # 変数置換
-          template_vars = {
-            "MALT_DIR" => config.malt_dir,
-            "PROJECT_DIR" => config.project_dir,
-            "DOCUMENT_ROOT" => config.document_root,
-            "PUBLIC_DIR" => config.document_root,
-            "PHP_VERSION" => config.php_version,
-            "HOMEBREW_PREFIX" => HOMEBREW_PREFIX
-          }
-
-          # 変数を文字列に変換
-          template_vars.each do |key, value|
-            template_vars[key] = value.to_s if !value.nil?
-          end
-
-          # 手動で置換
-          template_vars.each do |key, value|
-            if redis_content.include?("{{#{key}}}")
-              puts "Replacing {{#{key}}} with #{value}" if ENV["MALT_DEBUG"]
-              redis_content = redis_content.gsub("{{#{key}}}", value)
-            end
-          end
-
-          # ファイルに保存
-          File.write(temp_path, redis_content)
-          # ファイルが存在するか確認
-          if File.exist?(temp_path)
-            temp_conf = temp_path
-          else
-            puts "Failed to create temporary file: #{temp_path}"
-            temp_conf = nil
-          end
-        rescue => e
-          puts "Error processing Redis config: #{e.message}"
-          puts e.backtrace.join("\n")
-          temp_conf = nil
-        end
+        # Create temporary config file with variable expansion
+        temp_conf = create_temp_config(config, redis_conf)
 
         # Use original config if temporary creation failed
         if temp_conf.nil?
