@@ -18,10 +18,8 @@ module Malt
     end
 
     def self.kill(options)
-      config_path = find_config_in_current_dir(options)
-      config = Malt::Config.new(config_path)
-
-      kill_services(config)
+      # Directly kill services without checking malt.json
+      kill_services
     end
 
     class << self
@@ -65,9 +63,33 @@ module Malt
         end
       end
       
-      def kill_services(config)
-        puts "Checking for running services..."
+      def kill_services
+        # First check if any supported services are running
+        any_running = false
+        any_running ||= system("pgrep -f php-fpm >/dev/null 2>&1")
+        any_running ||= system("pgrep -f 'mysqld' >/dev/null 2>&1")
+        any_running ||= system("pgrep -f redis-server >/dev/null 2>&1")
+        any_running ||= system("pgrep -f memcached >/dev/null 2>&1")
+        any_running ||= system("pgrep -f nginx >/dev/null 2>&1")
+        any_running ||= system("pgrep -f httpd >/dev/null 2>&1")
         
+        # If no services are running, exit early
+        unless any_running
+          puts "No running instances of supported services were found."
+          return
+        end
+        
+        # Display message about what will be terminated
+        puts "About to forcibly terminate the following running services:"
+        puts "- PHP-FPM" if system("pgrep -f php-fpm >/dev/null 2>&1")
+        puts "- MySQL" if system("pgrep -f 'mysqld' >/dev/null 2>&1")
+        puts "- Redis" if system("pgrep -f redis-server >/dev/null 2>&1")
+        puts "- Memcached" if system("pgrep -f memcached >/dev/null 2>&1")
+        puts "- Nginx" if system("pgrep -f nginx >/dev/null 2>&1")
+        puts "- Apache HTTPD" if system("pgrep -f httpd >/dev/null 2>&1")
+        puts "(This command affects all instances, regardless of malt.json configuration)"
+        
+        # Proceed with termination
         any_service_killed = false
         
         any_service_killed |= kill_php_fpm
@@ -78,9 +100,7 @@ module Malt
         any_service_killed |= kill_apache
         
         if any_service_killed
-          puts "All services have been forcibly stopped."
-        else
-          puts "No running services found."
+          puts "Forcible termination of services completed."
         end
       end
       
