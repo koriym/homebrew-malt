@@ -1,5 +1,5 @@
 class Phpcomplete < Formula
-  desc "Install multiple versions of PHP with XDebug and other PECL packages"
+  desc "Install multiple versions of PHP with XDebug"
   homepage "https://www.php.net/"
   version "0.1.0"
   url "file:///dev/null"
@@ -18,6 +18,8 @@ class Phpcomplete < Formula
   depends_on "shivammathur/php/php@8.2"
   depends_on "shivammathur/php/php@8.3"
   depends_on "shivammathur/php/php@8.4"
+
+  # See full list here: https://github.com/shivammathur/homebrew-extensions
   depends_on "shivammathur/extensions/xdebug@5.6"
   depends_on "shivammathur/extensions/xdebug@7.0"
   depends_on "shivammathur/extensions/xdebug@7.1"
