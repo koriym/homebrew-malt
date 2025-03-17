@@ -24,123 +24,218 @@ module Malt
       kill_services(config)
     end
 
-    private
+    class << self
+      private
 
-    def self.find_config_in_current_dir(options)
-      return options[:config] if options[:config] && File.exist?(options[:config])
+      def find_config_in_current_dir(options)
+        return options[:config] if options[:config] && File.exist?(options[:config])
 
-      config_path = File.join(Dir.pwd, 'malt.json')
-      if File.exist?(config_path)
-        return config_path
+        config_path = File.join(Dir.pwd, 'malt.json')
+        if File.exist?(config_path)
+          return config_path
+        end
+
+        raise "malt.json not found in current directory. Run 'malt init' to create one."
       end
 
-      raise "malt.json not found in current directory. Run 'malt init' to create one."
-    end
+      def start_services(config)
+        puts "Starting services for #{config.project_name}..."
 
-    def self.start_services(config)
-      puts "Starting services for #{config.project_name}..."
+        # Register services
+        services = register_services(config)
 
-      # Register services
-      services = register_services(config)
-
-      # Start each service
-      services.each do |service|
-        service.start(config)
+        # Start each service
+        services.each do |service|
+          service.start(config)
+        end
+        puts "Services started."
+        puts "Run 'source <(malt env)' to set up your shell environment."
+        puts "See https://koriym.github.io/homebrew-malt/"
       end
-      puts "Services started."
-      puts "Run 'source <(malt env)' to set up your shell environment."
-      puts "See https://koriym.github.io/homebrew-malt/"
-    end
 
-    def self.stop_services(config)
-      puts "Stopping services for #{config.project_name}..."
+      def stop_services(config)
+        puts "Stopping services for #{config.project_name}..."
 
-      # Register services (stop in reverse order)
-      services = register_services(config).reverse
+        # Register services (stop in reverse order)
+        services = register_services(config).reverse
 
-      # Stop each service
-      services.each do |service|
-        service.stop(config)
+        # Stop each service
+        services.each do |service|
+          service.stop(config)
+        end
       end
-    end
-    
-    def self.kill_services(config)
-      puts "Checking for running services..."
       
-      any_service_killed = false
+      def kill_services(config)
+        puts "Checking for running services..."
+        
+        any_service_killed = false
+        
+        any_service_killed |= kill_php_fpm
+        any_service_killed |= kill_mysql
+        any_service_killed |= kill_redis
+        any_service_killed |= kill_memcached
+        any_service_killed |= kill_nginx
+        any_service_killed |= kill_apache
+        
+        if any_service_killed
+          puts "All services have been forcibly stopped."
+        else
+          puts "No running services found."
+        end
+      end
       
-      # Forcibly terminate PHP processes
-      if system("pgrep -f php-fpm >/dev/null 2>&1")
+      def kill_php_fpm
+        return false unless system("pgrep -f php-fpm >/dev/null 2>&1")
         puts "Forcibly terminating PHP-FPM..."
-        system("pkill -f php-fpm")
-        any_service_killed = true
+        # Direct forceful termination - SIGKILL for immediate termination
+        if system("pkill -9 -f php-fpm")
+          true
+        else
+          puts "Warning: Failed to forcibly terminate PHP-FPM"
+          false
+        end
       end
-      
-      # Forcibly terminate MySQL processes
-      if system("pgrep -f 'mysqld' >/dev/null 2>&1")
+
+      def kill_mysql
+        return false unless system("pgrep -f 'mysqld' >/dev/null 2>&1")
         puts "Forcibly terminating MySQL..."
-        system("#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqladmin -uroot -h127.0.0.1 shutdown 2>/dev/null || pkill -f 'mysqld'")
-        any_service_killed = true
+
+        # For kill command, skip directly to forceful termination with SIGKILL
+        puts "Using immediate termination for MySQL (SIGKILL)..."
+        success = system("pkill -9 -f 'mysqld'")
+        puts "SIGKILL to MySQL processes #{success ? "sent" : "failed"}"
+        
+        # Wait a moment for processes to terminate
+        sleep 0.5
+        
+        # Double check if processes are gone
+        if system("pgrep -f 'mysqld' >/dev/null 2>&1")
+          puts "Warning: MySQL processes still running despite SIGKILL"
+          # Try one more time
+          system("pkill -9 -f 'mysqld'")
+          sleep 0.5
+          success = !system("pgrep -f 'mysqld' >/dev/null 2>&1")
+        end
+
+        puts "MySQL forceful termination #{success ? "successful" : "failed"}"
+        success
       end
-      
-      # Forcibly terminate Redis processes
-      if system("pgrep -f redis-server >/dev/null 2>&1")
+
+      def kill_redis
+        return false unless system("pgrep -f redis-server >/dev/null 2>&1")
         puts "Forcibly terminating Redis..."
-        system("#{HOMEBREW_PREFIX}/bin/redis-cli shutdown 2>/dev/null || pkill -f redis-server")
-        any_service_killed = true
+
+        # For kill command, skip graceful shutdown and use immediate termination
+        puts "Using immediate termination for Redis (SIGKILL)..."
+        success = system("pkill -9 -f redis-server")
+        puts "SIGKILL to Redis processes #{success ? "sent" : "failed"}"
+        
+        # Wait a moment for processes to terminate
+        sleep 0.5
+        
+        # Double check if processes are gone
+        if system("pgrep -f redis-server >/dev/null 2>&1")
+          puts "Warning: Redis processes still running despite SIGKILL"
+          # Try one more time
+          system("pkill -9 -f redis-server")
+          sleep 0.5
+          success = !system("pgrep -f redis-server >/dev/null 2>&1")
+        else
+          puts "Redis forceful termination successful"
+        end
+
+        success
       end
       
-      # Forcibly terminate Memcached processes
-      if system("pgrep -f memcached >/dev/null 2>&1")
+      def kill_memcached
+        return false unless system("pgrep -f memcached >/dev/null 2>&1")
         puts "Forcibly terminating Memcached..."
-        system("pkill -f memcached")
-        any_service_killed = true
+        # Direct forceful termination with SIGKILL
+        if system("pkill -9 -f memcached")
+          sleep 0.5
+          if system("pgrep -f memcached >/dev/null 2>&1")
+            puts "Warning: Memcached processes still running despite SIGKILL"
+            system("pkill -9 -f memcached")
+            sleep 0.5
+            !system("pgrep -f memcached >/dev/null 2>&1")
+          else
+            true
+          end
+        else
+          puts "Warning: Failed to forcibly terminate Memcached"
+          false
+        end
       end
       
-      # Forcibly terminate Nginx processes
-      if system("pgrep -f nginx >/dev/null 2>&1")
+      def kill_nginx
+        return false unless system("pgrep -f nginx >/dev/null 2>&1")
         puts "Forcibly terminating Nginx..."
-        system("#{HOMEBREW_PREFIX}/bin/nginx -s stop 2>/dev/null || pkill -f nginx")
-        any_service_killed = true
+        
+        # For kill command, skip graceful shutdown and use immediate termination
+        puts "Using immediate termination for Nginx (SIGKILL)..."
+        success = system("pkill -9 -f nginx")
+        puts "SIGKILL to Nginx processes #{success ? "sent" : "failed"}"
+        
+        # Wait a moment for processes to terminate
+        sleep 0.5
+        
+        # Double check if processes are gone
+        if system("pgrep -f nginx >/dev/null 2>&1")
+          puts "Warning: Nginx processes still running despite SIGKILL"
+          # Try one more time
+          system("pkill -9 -f nginx")
+          sleep 0.5
+          success = !system("pgrep -f nginx >/dev/null 2>&1")
+        else
+          puts "Nginx forceful termination successful"
+        end
+        
+        success
       end
       
-      # Forcibly terminate Apache processes
-      if system("pgrep -f httpd >/dev/null 2>&1")
+      def kill_apache
+        return false unless system("pgrep -f httpd >/dev/null 2>&1")
         puts "Forcibly terminating Apache HTTPD..."
-        system("pkill -f httpd")
-        any_service_killed = true
+        # Direct forceful termination with SIGKILL
+        if system("pkill -9 -f httpd")
+          sleep 0.5
+          if system("pgrep -f httpd >/dev/null 2>&1")
+            puts "Warning: Apache processes still running despite SIGKILL"
+            system("pkill -9 -f httpd")
+            sleep 0.5
+            !system("pgrep -f httpd >/dev/null 2>&1")
+          else
+            puts "Apache HTTPD forceful termination successful"
+            true
+          end
+        else
+          puts "Warning: Failed to forcibly terminate Apache HTTPD"
+          false
+        end
       end
-      
-      if any_service_killed
-        puts "All services have been forcibly stopped."
-      else
-        puts "No running services found."
+      def register_services(config)
+        services = []
+
+        # PHP-FPM
+        services << PhpService.new if config.has_service?("php")
+
+        # MySQL
+        services << MysqlService.new if config.has_service?("mysql")
+
+        # Redis
+        services << RedisService.new if config.has_service?("redis")
+
+        # Memcached
+        services << MemcachedService.new if config.has_service?("memcached")
+
+        # Nginx
+        services << NginxService.new if config.has_service?("nginx")
+
+        # Apache
+        services << HttpdService.new if config.has_service?("httpd")
+
+        services
       end
-    end
-
-    # Register services
-    def self.register_services(config)
-      services = []
-
-      # PHP-FPM
-      services << PhpService.new if config.has_service?("php")
-
-      # MySQL
-      services << MysqlService.new if config.has_service?("mysql")
-
-      # Redis
-      services << RedisService.new if config.has_service?("redis")
-
-      # Memcached
-      services << MemcachedService.new if config.has_service?("memcached")
-
-      # Nginx
-      services << NginxService.new if config.has_service?("nginx")
-
-      # Apache
-      services << HttpdService.new if config.has_service?("httpd")
-
-      services
     end
 
     # Base service class
