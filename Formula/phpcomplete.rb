@@ -32,6 +32,10 @@ class Phpcomplete < Formula
   depends_on "shivammathur/extensions/xdebug@8.3"
   depends_on "shivammathur/extensions/xdebug@8.4"
 
+  def install
+    (prefix/"INSTALLED").write "phpcomplete installation successful"
+  end
+
   test do
     assert_match "phpcomplete installation successful", shell_output("cat #{prefix}/INSTALLED")
   end
