@@ -2,8 +2,11 @@
 port = 3306
 socket = {{MALT_DIR}}/tmp/mysql_3306.sock
 log-error = {{MALT_DIR}}/logs/mysql_3306.log
+general_log = 1
 general_log_file = {{MALT_DIR}}/logs/mysql_3306_general.log
+slow_query_log = 1
 slow_query_log_file = {{MALT_DIR}}/logs/mysql_3306_slow.log
+long_query_time = 0.5
 datadir = "{{MALT_DIR}}/var/mysql_0"
 pid-file = "{{MALT_DIR}}/var/mysql_0/mysqld.pid"
 
