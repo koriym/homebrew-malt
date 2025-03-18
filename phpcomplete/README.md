@@ -66,6 +66,8 @@ Reload your shell to apply the changes:
 ```shell
 . ~/.bashrc  # or . ~/.zshrc
 ```
+- Note: These instructions apply to macOS Terminal.app. For other terminal applications like iTerm2, the process may be slightly different but follows similar principles.
+
 ### Step 3: Switch PHP Versions
 
 You can now switch between PHP versions by using the aliases:
@@ -106,8 +108,10 @@ Save the profile. Now, whenever you want to use a specific PHP version, you can 
 
 ## Benefits
 
-Clear version indication: Each terminal window/tab can be set to a specific PHP version, making it easy to see which version is in use.
-Simultaneous use: Allows multiple terminal windows/tabs with different PHP versions open at the same time.
+- **Clear version indication**: Each terminal window/tab can be set to a specific PHP version, making it easy to see which version is in use.
+- **Simultaneous use**: Allows multiple terminal windows/tabs with different PHP versions open at the same time.
+- **Clear version indication**: Each terminal window/tab can be set to a specific PHP version, making it easy to see which version is in use.
+- **Simultaneous use**: Allows multiple terminal windows/tabs with different PHP versions open at the same time.
 
 ## Conclusion
 
