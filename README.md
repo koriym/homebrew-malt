@@ -63,7 +63,6 @@ This creates a `malt.json` file in your project directory:
 ```json
 {
   "project_name": "myapp",
-  "public_dir": "public",
   "dependencies": [
     "php@8.4",
     "mysql@8.0",
@@ -132,6 +131,12 @@ source <(malt env)  # Set up environment variables and aliases
 ```
 
 This makes onboarding new team members incredibly fast and ensures consistent development environments across the entire team and across multiple machines. The `source <(malt env)` command gives immediate access to all the correct binary versions and simplified service connections for the project.
+
+## Document Root
+
+By default, Malt uses the `public` directory as the document root for web services. This is automatically configured in the generated configuration files.
+
+For projects requiring multiple web endpoints (e.g., a main application and an admin interface), you can manually edit the configuration files for each port to specify different document roots.
 
 ## Directory Structure
 
