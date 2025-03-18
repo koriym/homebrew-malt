@@ -294,7 +294,7 @@ Devbox.json may be better for:
 
 Both tools are cross-platform and offer declarative configuration.
 
-#### 🍺Malt Prompt Brewery
+## 🍺Malt Prompt Brewery
 
 Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html).
 
