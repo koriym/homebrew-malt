@@ -294,7 +294,7 @@ Devbox.jsonは以下に適しているかもしれません：
 
 どちらのツールもクロスプラットフォームで宣言的な設定を提供します。
 
-#### 🍺Malt Prompt Brewery
+## 🍺Malt Prompt Brewery
 
 [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html)を使用して、malt.jsonからインフラストラクチャコードを生成します。
 
