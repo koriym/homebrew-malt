@@ -48,7 +48,45 @@ module Malt
         end
         puts "Services started."
         puts "Run 'source <(malt env)' to set up your shell environment."
+        
+        # Webサーバーのアクセス情報を表示
+        web_servers = []
+        if config.has_service?("httpd")
+          config.ports["httpd"].each do |port|
+            # port_in_use?の代わりに直接チェック
+            if is_port_in_use(port)
+              web_servers << (port == 8443 ? "https://127.0.0.1:#{port}/" : "http://127.0.0.1:#{port}/")
+            end
+          end
+        end
+        if config.has_service?("nginx")
+          config.ports["nginx"].each do |port|
+            if is_port_in_use(port)
+              web_servers << (port == 443 ? "https://127.0.0.1:#{port}/" : "http://127.0.0.1:#{port}/")
+            end
+          end
+        end
+
+        if !web_servers.empty?
+          puts "Access your site at:"
+          web_servers.each do |url|
+            puts "  - #{url}"
+          end
+        end
+        
         puts "See https://koriym.github.io/homebrew-malt/"
+      end
+      
+      # ServiceManagerクラスメソッドとしてport_in_useチェックを実装
+      def is_port_in_use(port)
+        # macOSとLinuxで異なるコマンドを使用
+        if RUBY_PLATFORM =~ /darwin/
+          # macOS
+          system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")
+        else
+          # Linux
+          system("netstat -tuln | grep :#{port} >/dev/null 2>&1")
+        end
       end
 
       def stop_services(config)
