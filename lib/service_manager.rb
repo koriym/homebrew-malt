@@ -454,8 +454,9 @@ module Malt
           return
         end
 
-        # Create temporary config file with variable expansion
+        # Create temporary config files with variable expansion
         temp_conf = create_temp_config(config, php_fpm_conf)
+        temp_ini = create_temp_config(config, php_ini)
 
         # Error if temporary file creation failed
         if temp_conf.nil?
@@ -463,10 +464,16 @@ module Malt
           return
         end
 
-        puts "Using PHP-FPM config file: #{temp_conf}"
+        if temp_ini.nil?
+          puts "Error: Failed to create temporary config file for PHP.ini"
+          return
+        end
 
-        # Start using temporary file
-        cmd = "#{HOMEBREW_PREFIX}/opt/php@#{config.php_version}/sbin/php-fpm -y #{temp_conf} -c #{php_ini}"
+        puts "Using PHP-FPM config file: #{temp_conf}"
+        puts "Using PHP.ini file: #{temp_ini}"
+
+        # Start using temporary files
+        cmd = "#{HOMEBREW_PREFIX}/opt/php@#{config.php_version}/sbin/php-fpm -y #{temp_conf} -c #{temp_ini}"
         system("#{cmd} &")
       end
 
@@ -480,6 +487,13 @@ module Malt
             Dir.glob(File.join(Dir.pwd, "malt", "conf", "php-fpm_*.conf.tmp")).each do |tmp_file|
               puts "Cleaning up temporary file: #{tmp_file}" if ENV["MALT_DEBUG"]
               FileUtils.rm(tmp_file) if File.exist?(tmp_file) && !ENV["MALT_DEBUG"]
+            end
+            
+            # Clean up php.ini temporary file
+            php_ini_tmp = File.join(Dir.pwd, "malt", "conf", "php.ini.tmp")
+            if File.exist?(php_ini_tmp)
+              puts "Cleaning up temporary file: #{php_ini_tmp}" if ENV["MALT_DEBUG"]
+              FileUtils.rm(php_ini_tmp) unless ENV["MALT_DEBUG"]
             end
           end
         else
