@@ -55,7 +55,7 @@ module Malt
           config.ports["httpd"].each do |port|
             # port_in_use?の代わりに直接チェック
             if is_port_in_use(port)
-              web_servers << (port == 8443 ? "https://127.0.0.1:#{port}/" : "http://127.0.0.1:#{port}/")
+              web_servers << "http://127.0.0.1:#{port}/"
             end
           end
         end
