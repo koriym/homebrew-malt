@@ -58,8 +58,8 @@ module Malt
     end
 
     def document_root
-      # Use the public_dir value from the config, resolved as a relative path from project_dir
-      File.join(@project_dir, @public_dir)
+      # Use the fixed "public" directory, resolved as a relative path from project_dir
+      File.join(@project_dir, "public")
     end
 
     def validate!

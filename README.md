@@ -63,7 +63,6 @@ This creates a `malt.json` file in your project directory:
 ```json
 {
   "project_name": "myapp",
-  "public_dir": "public",
   "dependencies": [
     "php@8.4",
     "mysql@8.0",
@@ -77,8 +76,8 @@ This creates a `malt.json` file in your project directory:
     "php": [9000],
     "redis": [6379],
     "memcached": [11211],
-    "nginx": [80, 443],
-    "httpd": [8080, 8443],
+    "nginx": [80],
+    "httpd": [8080],
     "mysql": [3306]
   },
   "php_extensions": [
@@ -133,6 +132,12 @@ source <(malt env)  # Set up environment variables and aliases
 
 This makes onboarding new team members incredibly fast and ensures consistent development environments across the entire team and across multiple machines. The `source <(malt env)` command gives immediate access to all the correct binary versions and simplified service connections for the project.
 
+## Document Root
+
+By default, Malt uses the `public` directory as the document root for web services. This is automatically configured in the generated configuration files.
+
+For projects requiring multiple web endpoints (e.g., a main application and an admin interface), you can manually edit the configuration files for each port to specify different document roots.
+
 ## Directory Structure
 
 Malt creates the following directory structure in your project:
@@ -184,6 +189,41 @@ Malt manages the following services:
 - **MySQL** - Custom configurations
 - **Redis** - Caching server
 - **Memcached** - Distributed memory caching
+
+### Setting up HTTPS
+
+By default, Malt configures HTTP for development simplicity. To enable HTTPS:
+
+1. Make sure your `malt.json` includes HTTPS ports:
+   ```json
+   "ports": {
+     "nginx": [80, 443],
+     "httpd": [8080, 8443]
+   }
+   ```
+
+2. After running `malt create`, the configuration files for HTTPS will be generated in the `malt/conf/` directory.
+
+3. For self-signed certificates (development only):
+   ```bash
+   # For Nginx
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout malt/conf/nginx-selfsigned.key \
+     -out malt/conf/nginx-selfsigned.crt \
+     -subj "/CN=localhost"
+
+   # For Apache
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout malt/conf/httpd-selfsigned.key \
+     -out malt/conf/httpd-selfsigned.crt \
+     -subj "/CN=localhost"
+   ```
+
+4. Edit the respective configuration files in `malt/conf/` to reference these certificates.
+
+5. Restart services with `malt stop` followed by `malt start`.
+
+Note: When using self-signed certificates, browsers will display security warnings. This is normal for development environments.
 
 ## Environment Variables
 

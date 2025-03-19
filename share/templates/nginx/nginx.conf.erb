@@ -1,7 +1,7 @@
 server {
   listen {{PORT}};
   server_name localhost;
-  root "{{DOCUMENT_ROOT}}";
+  root "{{PROJECT_DIR}}/public";
   index index.php index.html index.htm;
 
   access_log "{{MALT_DIR}}/logs/nginx_{{PORT}}_access.log";
