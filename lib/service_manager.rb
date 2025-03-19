@@ -62,7 +62,7 @@ module Malt
         if config.has_service?("nginx")
           config.ports["nginx"].each do |port|
             if is_port_in_use(port)
-              web_servers << (port == 443 ? "https://127.0.0.1:#{port}/" : "http://127.0.0.1:#{port}/")
+              web_servers << "http://127.0.0.1:#{port}/"
             end
           end
         end
