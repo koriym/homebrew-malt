@@ -77,12 +77,6 @@ php81  # Switch to PHP 8.1
 php74  # Switch to PHP 7.4
 ```
 
-### Benefits
-
-- **Simple and intuitive**: Quickly s# PHP Complete
-
-PHP Complete is a Homebrew formula that allows you to install multiple versions of PHP, along with Xdebug and other popular PECL packages. It simplifies the process of setting up a comprehensive PHP development environment.
-
 ## Features
 
 - Installs multiple PHP versions (`5.6` to `8.4`) using the shivammathur/php tap
