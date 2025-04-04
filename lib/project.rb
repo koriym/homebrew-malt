@@ -247,7 +247,6 @@ module Malt
           content = nginx_template.render({
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
-                                            DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
                                             HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_PORT: config.ports["php"].first
                                           })
@@ -266,7 +265,6 @@ module Malt
           content = httpd_template.render({
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
-                                            DOCUMENT_ROOT: "{{PUBLIC_DIR}}",
                                             HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_LIB_PATH: php_lib_path
                                           })
