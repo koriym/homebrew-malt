@@ -103,6 +103,17 @@ begin
   when "create"
     Malt::Project.create(options)
   when "start"
+    # Determine the expected malt directory path based on the current directory
+    malt_dir_path = File.join(Dir.pwd, 'malt')
+
+    # Check if the malt directory exists
+    unless Dir.exist?(malt_dir_path)
+      puts "Warning: Malt directory '#{malt_dir_path}' not found."
+      puts "Please run 'malt create' first to generate configuration files."
+      exit 1 # Exit with a non-zero status
+    end
+
+    # If the directory exists, proceed with starting services
     Malt::ServiceManager.start(options)
   when "stop"
     Malt::ServiceManager.stop(options)
