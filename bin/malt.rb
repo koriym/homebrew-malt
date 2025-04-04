@@ -109,7 +109,7 @@ begin
     # Check if the malt directory exists
     unless Dir.exist?(malt_dir_path)
       warn "Warning: Malt directory '#{malt_dir_path}' not found."
-      warn "Please run 'malt create' first to generate configuration files."
+      warn "Please run `malt create` first to generate configuration files."
       exit 1 # Exit with a non-zero status
     end
 
