@@ -63,7 +63,6 @@ malt init
 ```json
 {
   "project_name": "myapp",
-  "public_dir": "public",
   "dependencies": [
     "php@8.4",
     "mysql@8.0",
@@ -144,7 +143,7 @@ your-project/
 │   ├── logs/       # ログファイル
 │   ├── tmp/        # 一時ファイル
 │   └── var/        # データファイル（MySQL等）
-├── public/         # ドキュメントルート（public_dir）
+├── public/         # ドキュメントルート (固定)
 └── malt.json       # 環境定義
 ```
 
@@ -173,6 +172,12 @@ malt/conf/*.tmp
 - `malt stop` - サービスを停止する
 - `malt env` - 環境変数を表示する
 - `malt info` - 現在のプロジェクトに関する情報を表示する
+
+## 設定のカスタマイズ
+
+`malt create` で生成された設定ファイル (`malt/conf/` 内) を直接編集することで、Nginx, PHP, MySQL などのサービス設定をプロジェクト固有の要件に合わせてカスタマイズできます。
+
+詳細は [設定カスタマイズガイド](docs/customization_guide.ja.md) を参照してください。
 
 ## サービス設定
 

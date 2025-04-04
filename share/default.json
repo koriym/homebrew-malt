@@ -1,6 +1,5 @@
 {
   "project_name": "myapp",
-  "public_dir": "public",
   "dependencies": [
     "php@8.4",
     "mysql@8.0",
