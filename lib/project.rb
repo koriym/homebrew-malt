@@ -128,16 +128,21 @@ module Malt
       end
 
       public_dir = config.document_root
-      unless File.directory?(public_dir)
+      if File.directory?(public_dir)
+        # Public directory already exists
+        puts "Existing 'public/' directory found. It will be used as the document root."
+        puts "No files were copied into it by Malt."
+      else
+        # Public directory does not exist, create it and copy dashboard
         FileUtils.mkdir_p(public_dir)
-        # Copy public files from template
         template_dir = File.join(MALT_SHARE_PATH, "public")
         FileUtils.cp_r("#{template_dir}/.", public_dir)
-        puts "Created public directory and dashboard: #{public_dir}"
+        puts "Created 'public/' directory and copied default dashboard files."
+        puts "Feel free to edit or delete these files."
       end
 
       generate_config_files(config)
-      puts "Created malt files in: #{malt_dir}"
+      puts "Created malt configuration files in: #{malt_dir}" # Slightly updated message
       puts "Run 'malt start' to start services."
     end
 
@@ -196,7 +201,6 @@ module Malt
       puts "Project: #{config.project_name}"
       puts "Directory: #{config.project_dir}"
       puts "Malt Directory: #{config.malt_dir}"
-      puts "Document Root: #{config.document_root}"
       puts "Services:"
       puts "  PHP-FPM: #{config.ports["php"].join(', ')}" if config.ports["php"]
       puts "  Nginx: #{config.ports["nginx"].join(', ')}" if config.ports["nginx"]
