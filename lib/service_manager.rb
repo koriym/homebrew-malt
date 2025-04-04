@@ -326,7 +326,6 @@ module Malt
         template_vars = {
           "MALT_DIR" => config.malt_dir,
           "PROJECT_DIR" => config.project_dir,
-          "PUBLIC_DIR" => config.document_root,
           "PHP_VERSION" => config.php_version,
           "HOMEBREW_PREFIX" => HOMEBREW_PREFIX
         }
