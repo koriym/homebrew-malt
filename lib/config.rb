@@ -1,6 +1,6 @@
 module Malt
   class Config
-    attr_reader :project_name, :dependencies, :ports, :php_extensions, :project_dir, :public_dir
+    attr_reader :project_name, :dependencies, :ports, :php_extensions, :project_dir # Removed :public_dir
 
     def initialize(config_path)
       unless File.exist?(config_path)
@@ -20,8 +20,6 @@ module Malt
       @project_dir = File.dirname(config_path)
       @config_path = config_path
 
-      # Read public_dir from config if available, otherwise use default "public"
-      @public_dir = config["public_dir"] || "public"
     end
 
     def php_version
@@ -58,8 +56,8 @@ module Malt
     end
 
     def document_root
-      # Use the @public_dir value read from config or default "public"
-      File.join(@project_dir, @public_dir)
+      # Always return the path to the "public" directory
+      File.join(@project_dir, "public")
     end
 
     def validate!
@@ -77,9 +75,10 @@ module Malt
     end
 
     def to_json
+      # This method seems unused, but removing public_dir just in case
       {
         project_name: @project_name,
-        public_dir: @public_dir,
+        # public_dir: @public_dir, # Removed
         dependencies: @dependencies,
         ports: @ports,
         php_extensions: @php_extensions
