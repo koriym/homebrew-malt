@@ -265,7 +265,6 @@ module Malt
           content = httpd_template.render({
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
-                                            # DOCUMENT_ROOT: "{{PUBLIC_DIR}}", # Removed unused context
                                             HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
                                             PHP_LIB_PATH: php_lib_path
                                           })
