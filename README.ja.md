@@ -76,8 +76,8 @@ malt init
     "php": [9000],
     "redis": [6379],
     "memcached": [11211],
-    "nginx": [80, 443],
-    "httpd": [8080, 8443],
+    "nginx": [80],
+    "httpd": [8080],
     "mysql": [3306]
   },
   "php_extensions": [
@@ -131,6 +131,12 @@ source <(malt env)  # 環境変数とエイリアスを設定
 ```
 
 これにより、新しいチームメンバーのオンボーディングが信じられないほど速くなり、チーム全体と複数のマシン間で一貫した開発環境が確保されます。`source <(malt env)`コマンドにより、すべての正しいバイナリバージョンと、プロジェクト用に簡略化されたサービス接続にすぐにアクセスできます。
+
+## ドキュメントルート
+
+デフォルトでは、MaltはWebサービスのドキュメントルートとして`public`ディレクトリを使用します。これは生成された設定ファイルで自動的に設定されます。
+
+複数のWebエンドポイント（例：メインアプリケーションと管理インターフェース）が必要なプロジェクトの場合、各ポートの設定ファイルを手動で編集して、異なるドキュメントルートを指定できます。
 
 ## ディレクトリ構造
 
@@ -189,6 +195,41 @@ Maltは以下のサービスを管理します：
 - **MySQL** - カスタム設定
 - **Redis** - キャッシュサーバー
 - **Memcached** - 分散メモリキャッシング
+
+### HTTPSの設定
+
+デフォルトでは、Maltは開発のシンプルさのためにHTTPを設定します。HTTPSを有効にするには：
+
+1. `malt.json`にHTTPSポートが含まれていることを確認してください：
+   ```json
+   "ports": {
+     "nginx": [80, 443],
+     "httpd": [8080, 8443]
+   }
+   ```
+
+2. `malt create`を実行すると、HTTPS用の設定ファイルが`malt/conf/`ディレクトリに生成されます。
+
+3. 自己署名証明書の場合（開発のみ）：
+   ```bash
+   # Nginx用
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout malt/conf/nginx-selfsigned.key \
+     -out malt/conf/nginx-selfsigned.crt \
+     -subj "/CN=localhost"
+
+   # Apache用
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout malt/conf/httpd-selfsigned.key \
+     -out malt/conf/httpd-selfsigned.crt \
+     -subj "/CN=localhost"
+   ```
+
+4. `malt/conf/`内の各設定ファイルを編集して、これらの証明書を参照するようにします。
+
+5. `malt stop`に続けて`malt start`でサービスを再起動します。
+
+注意：自己署名証明書を使用する場合、ブラウザはセキュリティ警告を表示します。これは開発環境では正常です。
 
 ## 環境変数
 
