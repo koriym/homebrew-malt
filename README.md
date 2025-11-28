@@ -2,7 +2,7 @@
 
 **JSON-driven Homebrew Dev Services**
 
-<img src="https://koriym.github.io/homebrew-malt/malt.jpg" width="180" alt="Moruko, a young girl holding malt">
+<img src="malt.jpg" width="180" alt="Moruko, a young girl holding malt">
 
 Malt is a JSON-driven development environment manager that creates project-specific development environments (IaC) using only Homebrew.
 Define your stack in one JSON file, and let your team replicate it anywhere with the portable `malt/` directory.
