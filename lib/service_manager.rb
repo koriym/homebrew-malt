@@ -39,6 +39,9 @@ module Malt
       def start_services(config)
         puts "Starting services for #{config.project_name}..."
 
+        # Clean up old temporary config files before starting
+        cleanup_old_temp_files(config)
+
         # Register services
         services = register_services(config)
 
@@ -271,6 +274,21 @@ module Malt
           false
         end
       end
+
+      # Clean up old temporary config files to prevent .tmp.tmp accumulation
+      def cleanup_old_temp_files(config)
+        return unless config.conf_dir && Dir.exist?(config.conf_dir)
+
+        Dir.glob(File.join(config.conf_dir, "*.tmp")).each do |tmp_file|
+          begin
+            File.delete(tmp_file)
+            puts "Cleaned up old temp file: #{tmp_file}" if ENV["MALT_DEBUG"]
+          rescue => e
+            puts "Warning: Failed to delete #{tmp_file}: #{e.message}" if ENV["MALT_DEBUG"]
+          end
+        end
+      end
+
       def register_services(config)
         services = []
 
@@ -347,7 +365,8 @@ module Malt
         template_vars.merge!(extra_vars)
 
         # Temporary file path (in the same directory as the original)
-        temp_path = "#{config_path}.tmp"
+        # Prevent .tmp.tmp by checking if path already ends with .tmp
+        temp_path = config_path.end_with?(".tmp") ? config_path : "#{config_path}.tmp"
 
         # Read the original file and perform variable substitution
         begin
@@ -540,10 +559,10 @@ module Malt
         # 環境変数を追加してcreate_temp_configを呼び出す
         temp_conf = create_temp_config_with_extras(config, my_cnf, { "INDEX" => index.to_s })
 
-        # 一時ファイルの生成に失敗した場合は元のファイルを使用
+        # Abort if temp config creation failed
         if temp_conf.nil?
-          puts "Failed to create temporary config file, using original config"
-          temp_conf = my_cnf
+          puts "Error: Failed to create temporary config file for MySQL on port #{port}"
+          return
         end
 
         if temp_conf
@@ -562,19 +581,21 @@ module Malt
           log_file = File.join(config.logs_dir, "mysql_#{port}_error.log")
           puts "MySQL error log: #{log_file}"
 
-          # MySQL初期化が必要かチェック
+          # Initialize MySQL if needed
           if !File.exist?(File.join(data_dir, "mysql")) || Dir.glob(File.join(data_dir, "*")).empty?
             puts "Initializing MySQL data directory at #{data_dir}..."
             init_cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld --initialize-insecure --datadir=#{data_dir}"
-            system(init_cmd)
+            unless system(init_cmd)
+              puts "Error: MySQL initialization failed"
+              return
+            end
             puts "MySQL initialization complete."
           end
 
-          # 一時ファイルの存在を確認
-          if !File.exist?(temp_conf)
+          # Verify temp file exists
+          unless File.exist?(temp_conf)
             puts "Error: MySQL config temp file not found at: #{temp_conf}"
-            puts "Using original config file instead"
-            temp_conf = my_cnf
+            return
           end
 
           # シェルコマンドの実行（出力をログファイルにリダイレクト）
@@ -653,10 +674,10 @@ module Malt
         # Create temporary config file with variable expansion
         temp_conf = create_temp_config(config, redis_conf)
 
-        # Use original config if temporary creation failed
+        # Abort if temp config creation failed
         if temp_conf.nil?
-          puts "Error: Failed to create temporary config file for Redis. Using original config."
-          temp_conf = redis_conf
+          puts "Error: Failed to create temporary config file for Redis on port #{port}"
+          return
         end
 
         # Start Redis with temporary config
@@ -786,17 +807,20 @@ module Malt
             main_content = main_content.gsub(original_include, temp_include)
           end
 
-          # HOMEBREW_PREFIXの置換を追加
-          if main_content.include?("{{HOMEBREW_PREFIX}}")
-            main_content = main_content.gsub("{{HOMEBREW_PREFIX}}", HOMEBREW_PREFIX)
+          # Substitute template variables
+          template_vars = {
+            "MALT_DIR" => config.malt_dir,
+            "PROJECT_DIR" => config.project_dir,
+            "PHP_VERSION" => config.php_version,
+            "HOMEBREW_PREFIX" => HOMEBREW_PREFIX
+          }
+          template_vars.each do |key, value|
+            main_content = main_content.gsub("{{#{key}}}", value.to_s)
           end
 
-          # 修正したメイン設定内容を使って一時ファイルを作成
-          temp_main_path = "#{nginx_conf}.tmp"
-          File.write(temp_main_path, main_content)
-
-          # 一時メインファイルにも変数置換を適用
-          temp_conf = create_temp_config(config, temp_main_path)
+          # Write to temporary file
+          temp_conf = "#{nginx_conf}.tmp"
+          File.write(temp_conf, main_content)
         else
           puts "Nginx main config file not found: #{nginx_conf}"
           temp_conf = nil
@@ -811,10 +835,12 @@ module Malt
           return
         end
 
-        # 一時ファイルを使用して起動
+        # Start nginx with temporary config
         cmd = "nginx -c #{temp_conf}"
         puts "Running command: #{cmd}"
-        system(cmd)
+        unless system(cmd)
+          puts "Error: Failed to start Nginx"
+        end
       end
 
       def stop_nginx
@@ -882,26 +908,23 @@ module Malt
         # デバッグ設定を元に戻す
         ENV["MALT_DEBUG"] = old_debug
 
-        # 一時ファイルの生成に失敗した場合は元のファイルを使用
+        # Abort if temp config creation failed
         if temp_conf.nil?
-          puts "Failed to create temporary config file, using original config"
-          temp_conf = httpd_conf
+          puts "Error: Failed to create temporary config file for Apache HTTPD on port #{port}"
+          return
         end
 
-        if temp_conf
-          # 一時ファイルの存在を確認
-          if !File.exist?(temp_conf)
-            puts "Error: Apache HTTPD config temp file not found at: #{temp_conf}"
-            puts "Using original config file instead"
-            temp_conf = httpd_conf
-          end
-
-          # 一時ファイルを使用して起動
-          cmd = "#{HOMEBREW_PREFIX}/bin/httpd -f #{temp_conf}"
-          puts "Running command: #{cmd}"
-          system("#{cmd} &")
-          puts "Apache HTTPD starting in background..."
+        # Verify temp file exists
+        unless File.exist?(temp_conf)
+          puts "Error: Apache HTTPD config temp file not found at: #{temp_conf}"
+          return
         end
+
+        # Start with temporary config
+        cmd = "#{HOMEBREW_PREFIX}/bin/httpd -f #{temp_conf}"
+        puts "Running command: #{cmd}"
+        system("#{cmd} &")
+        puts "Apache HTTPD starting in background..."
       end
 
       def stop_httpd(config, port)
