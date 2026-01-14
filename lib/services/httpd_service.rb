@@ -30,14 +30,8 @@ module Malt
 
       httpd_conf = File.join(config.conf_dir, "httpd_#{port}.conf")
 
-      # Save debug output setting
-      old_debug = ENV["MALT_DEBUG"]
-
       # Create temp file with variable expansion
       temp_conf = create_temp_config(config, httpd_conf)
-
-      # Restore debug setting
-      ENV["MALT_DEBUG"] = old_debug
 
       # Abort if temp config creation failed
       if temp_conf.nil?

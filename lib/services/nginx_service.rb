@@ -10,7 +10,7 @@ module Malt
     end
 
     def stop(config)
-      stop_nginx
+      stop_nginx(config)
     end
 
     private
@@ -27,9 +27,6 @@ module Malt
 
       ports_str = config.ports["nginx"].join(", ")
       puts "Starting Nginx on ports #{ports_str}..."
-
-      # Save debug output setting
-      old_debug = ENV["MALT_DEBUG"]
 
       # First, expand variables in each port-specific config file
       port_temps = {}
@@ -80,9 +77,6 @@ module Malt
         temp_conf = nil
       end
 
-      # Restore debug setting
-      ENV["MALT_DEBUG"] = old_debug
-
       # Error if temp file creation failed
       if temp_conf.nil?
         puts "Error: Failed to create temporary config file for Nginx"
@@ -95,7 +89,7 @@ module Malt
       puts "Error: Failed to start Nginx" unless system(cmd)
     end
 
-    def stop_nginx
+    def stop_nginx(config)
       # Check if Nginx is running (by process presence)
       if system("pgrep -f nginx >/dev/null 2>&1")
         puts "Stopping Nginx..."
@@ -106,11 +100,11 @@ module Malt
         # Delete related temp config files
         if stop_success && !ENV["MALT_DEBUG"]
           # Main config file
-          nginx_conf_tmp = File.join(Dir.pwd, "malt", "conf", "nginx_main.conf.tmp")
+          nginx_conf_tmp = File.join(config.conf_dir, "nginx_main.conf.tmp")
           remove_temp_config(nginx_conf_tmp) if File.exist?(nginx_conf_tmp)
 
           # Port-specific config files
-          Dir.glob(File.join(Dir.pwd, "malt", "conf", "nginx_*.conf.tmp")).each do |tmp_file|
+          Dir.glob(File.join(config.conf_dir, "nginx_*.conf.tmp")).each do |tmp_file|
             remove_temp_config(tmp_file)
           end
         end

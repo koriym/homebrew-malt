@@ -58,6 +58,8 @@ module Malt
     end
 
     def stop_redis(port)
+      port = Integer(port) # Validate port is numeric
+
       # Check if Redis is running on the specific port
       if port_in_use?(port)
         puts "Stopping Redis on port #{port}..."
