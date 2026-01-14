@@ -342,6 +342,58 @@ Both tools are cross-platform and offer declarative configuration.
 
 Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html).
 
+## Claude Code Plugin
+
+Malt includes a Claude Code plugin for comprehensive development environment management - setup, troubleshooting, customization, and format conversion.
+
+### Installation
+
+**Prerequisites:** Malt CLI must be installed first (see [Installation](#installation) section above).
+
+```bash
+# Add the Malt marketplace
+/plugin marketplace add koriym/homebrew-malt
+
+# Install the plugin
+/plugin install malt@koriym-malt
+```
+
+Or install directly from GitHub:
+
+```bash
+/plugin install malt@koriym/homebrew-malt
+```
+
+> **Note:** The plugin provides Claude with knowledge about Malt. The actual `malt` command requires the CLI to be installed via Homebrew.
+
+### Usage
+
+The skill handles multiple scenarios:
+
+**Setup:**
+- "Set up development environment for this PHP project"
+- "Initialize malt for this project"
+
+**Troubleshooting:**
+- "malt start fails with port error"
+- "MySQL won't start"
+
+**Customization:**
+- "How do I change the document root?"
+- "I need multiple MySQL instances"
+
+**Convert (malt.json as SSOT):**
+- "Generate docker-compose.yml from malt.json"
+- "Generate GitHub Actions workflow from malt.json"
+- "Generate .env from malt.json"
+
+The skill will:
+1. Check prerequisites (Homebrew, Malt installation)
+2. Analyze `composer.json` to detect required services
+3. Guide troubleshooting with logs and port checks
+4. Help customize configuration files
+5. Convert malt.json to Docker Compose, Devbox, .env, GitHub Actions
+
 ## Documentation
 
 Full documentation is available at [https://koriym.github.io/homebrew-malt/index.html](https://koriym.github.io/homebrew-malt/index.html)

@@ -1,0 +1,14 @@
+{
+  "name": "malt",
+  "version": "1.0.0",
+  "description": "Comprehensive Malt development environment management - setup, troubleshooting, customization, and format conversion",
+  "author": {
+    "name": "Akihito Koriyama",
+    "url": "https://github.com/koriym"
+  },
+  "homepage": "https://koriym.github.io/homebrew-malt/",
+  "repository": "https://github.com/koriym/homebrew-malt",
+  "license": "MIT",
+  "keywords": ["php", "development", "homebrew", "malt", "docker", "devbox"],
+  "skills": "./skills/"
+}
