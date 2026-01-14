@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "fileutils"
+
 module Malt
   # Homebrew prefix constant shared across services
   HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || "/opt/homebrew"
@@ -13,6 +15,7 @@ module Malt
 
     # Check if a port is already in use
     def port_in_use?(port)
+      port = Integer(port) # Validate port is numeric
       # Use different commands for macOS and Linux
       if RUBY_PLATFORM =~ /darwin/
         system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")

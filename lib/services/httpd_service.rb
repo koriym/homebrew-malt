@@ -69,7 +69,6 @@ module Malt
         # Clean up temp file
         httpd_conf_tmp = File.join(config.malt_dir, "conf", "httpd_#{port}.conf.tmp")
         if !ENV["MALT_DEBUG"] && File.exist?(httpd_conf_tmp)
-          puts "Cleaning up temporary Apache config: #{httpd_conf_tmp}" if ENV["MALT_DEBUG"]
           remove_temp_config(httpd_conf_tmp)
         end
 
@@ -121,7 +120,6 @@ module Malt
 
       # Clean up temp file
       if !ENV["MALT_DEBUG"] && File.exist?(httpd_conf_tmp)
-        puts "Cleaning up temporary Apache config: #{httpd_conf_tmp}" if ENV["MALT_DEBUG"]
         remove_temp_config(httpd_conf_tmp)
       end
     end

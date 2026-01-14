@@ -70,7 +70,6 @@ module Malt
 
         # Clean up temporary file if Redis was stopped successfully
         if stop_success && !ENV["MALT_DEBUG"] && File.exist?(redis_conf_tmp)
-          puts "Cleaning up temporary Redis config: #{redis_conf_tmp}" if ENV["MALT_DEBUG"]
           remove_temp_config(redis_conf_tmp)
         end
       else

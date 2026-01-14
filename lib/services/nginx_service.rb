@@ -107,14 +107,10 @@ module Malt
         if stop_success && !ENV["MALT_DEBUG"]
           # Main config file
           nginx_conf_tmp = File.join(Dir.pwd, "malt", "conf", "nginx_main.conf.tmp")
-          if File.exist?(nginx_conf_tmp)
-            puts "Cleaning up temporary Nginx config: #{nginx_conf_tmp}" if ENV["MALT_DEBUG"]
-            remove_temp_config(nginx_conf_tmp)
-          end
+          remove_temp_config(nginx_conf_tmp) if File.exist?(nginx_conf_tmp)
 
           # Port-specific config files
           Dir.glob(File.join(Dir.pwd, "malt", "conf", "nginx_*.conf.tmp")).each do |tmp_file|
-            puts "Cleaning up temporary Nginx config: #{tmp_file}" if ENV["MALT_DEBUG"]
             remove_temp_config(tmp_file)
           end
         end
