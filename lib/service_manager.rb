@@ -570,44 +570,40 @@ module Malt
           return
         end
 
-        if temp_conf
-          # MySQL設定ファイルのパスを出力
-          puts "MySQL config path: #{temp_conf}"
-          puts "Config exists: #{File.exist?(temp_conf)}"
+        puts "MySQL config path: #{temp_conf}"
+        puts "Config exists: #{File.exist?(temp_conf)}"
 
-          # データディレクトリを確保（MySQL用）
-          data_dir = File.join(config.var_dir, "mysql_#{index}")
-          unless File.directory?(data_dir)
-            puts "Creating MySQL data directory: #{data_dir}"
-            FileUtils.mkdir_p(data_dir)
-          end
+        # Create MySQL data directory
+        data_dir = File.join(config.var_dir, "mysql_#{index}")
+        unless File.directory?(data_dir)
+          puts "Creating MySQL data directory: #{data_dir}"
+          FileUtils.mkdir_p(data_dir)
+        end
 
-          # MySQLエラーログファイルのパスを表示
-          log_file = File.join(config.logs_dir, "mysql_#{port}_error.log")
-          puts "MySQL error log: #{log_file}"
+        log_file = File.join(config.logs_dir, "mysql_#{port}_error.log")
+        puts "MySQL error log: #{log_file}"
 
-          # Initialize MySQL if needed
-          if !File.exist?(File.join(data_dir, "mysql")) || Dir.glob(File.join(data_dir, "*")).empty?
-            puts "Initializing MySQL data directory at #{data_dir}..."
-            init_cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld --initialize-insecure --datadir=#{data_dir}"
-            unless system(init_cmd)
-              puts "Error: MySQL initialization failed"
-              return
-            end
-            puts "MySQL initialization complete."
-          end
-
-          # Verify temp file exists
-          unless File.exist?(temp_conf)
-            puts "Error: MySQL config temp file not found at: #{temp_conf}"
+        # Initialize MySQL if needed
+        if !File.exist?(File.join(data_dir, "mysql")) || Dir.glob(File.join(data_dir, "*")).empty?
+          puts "Initializing MySQL data directory at #{data_dir}..."
+          init_cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld --initialize-insecure --datadir=#{data_dir}"
+          unless system(init_cmd)
+            puts "Error: MySQL initialization failed"
             return
           end
-
-          # シェルコマンドの実行（出力をログファイルにリダイレクト）
-          cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld_safe --defaults-file=#{temp_conf} > #{log_file} 2>&1 &"
-          system(cmd)
-          puts "MySQL starting in background..."
+          puts "MySQL initialization complete."
         end
+
+        # Verify temp file exists
+        unless File.exist?(temp_conf)
+          puts "Error: MySQL config temp file not found at: #{temp_conf}"
+          return
+        end
+
+        # Start MySQL in background
+        cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld_safe --defaults-file=#{temp_conf} > #{log_file} 2>&1 &"
+        system(cmd)
+        puts "MySQL starting in background..."
       end
 
       def stop_mysql(config, port)
