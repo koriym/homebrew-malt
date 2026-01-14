@@ -77,5 +77,9 @@ jobs:
           ruby $GITHUB_WORKSPACE/bin/malt.rb stop
 
           # Verify PHP-FPM stopped
-          sleep 1
-          ! lsof -i :9000 | grep php-fpm || true
+          sleep 2
+          if lsof -i :9000 | grep php-fpm; then
+            echo "ERROR: PHP-FPM still running after stop"
+            exit 1
+          fi
+          echo "PHP-FPM stopped successfully"
