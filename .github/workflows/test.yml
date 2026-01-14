@@ -1,0 +1,85 @@
+name: Tests
+
+on:
+  push:
+    branches: [1.x]
+  pull_request:
+    branches: [1.x]
+
+jobs:
+  unit-test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Run unit tests
+        run: rake test
+
+  integration-test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install PHP
+        run: brew install php@8.4
+
+      - name: Integration test (PHP only)
+        run: |
+          # Create test directory
+          mkdir -p /tmp/malt-integration-test
+          cd /tmp/malt-integration-test
+
+          # Init
+          ruby $GITHUB_WORKSPACE/bin/malt.rb init
+
+          # Create PHP-only config
+          cat > malt.json << 'EOF'
+          {
+            "project_name": "integration-test",
+            "dependencies": ["php@8.4"],
+            "ports": {
+              "php": [9000]
+            },
+            "php_extensions": []
+          }
+          EOF
+
+          # Create config files
+          ruby $GITHUB_WORKSPACE/bin/malt.rb create
+
+          # Verify config files created
+          test -d malt/conf
+          test -f malt/conf/php-fpm_9000.conf
+          test -f malt/conf/php.ini
+
+          # Start services
+          ruby $GITHUB_WORKSPACE/bin/malt.rb start
+
+          # Wait for PHP-FPM to start
+          sleep 3
+
+          # Verify PHP-FPM is running
+          lsof -i :9000 | grep php-fpm
+
+          # Stop services
+          ruby $GITHUB_WORKSPACE/bin/malt.rb stop
+
+          # Verify PHP-FPM stopped
+          sleep 2
+          if lsof -i :9000 | grep php-fpm; then
+            echo "ERROR: PHP-FPM still running after stop"
+            exit 1
+          fi
+          echo "PHP-FPM stopped successfully"
