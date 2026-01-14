@@ -1,0 +1,24 @@
+{
+  "name": "koriym-malt",
+  "owner": {
+    "name": "Akihito Koriyama",
+    "email": "akihito.koriyama@gmail.com"
+  },
+  "metadata": {
+    "description": "Malt - JSON-driven Homebrew Dev Services",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "malt",
+      "source": ".",
+      "description": "Comprehensive Malt development environment management - setup PHP projects, troubleshoot services, customize configurations, and convert malt.json to Docker Compose, Devbox, .env, GitHub Actions",
+      "version": "1.0.0",
+      "author": {
+        "name": "Akihito Koriyama"
+      },
+      "category": "development",
+      "tags": ["php", "homebrew", "docker", "development-environment", "devbox"]
+    }
+  ]
+}
