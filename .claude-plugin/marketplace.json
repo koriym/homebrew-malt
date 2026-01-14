@@ -12,6 +12,7 @@
     {
       "name": "malt",
       "source": ".",
+      "strict": true,
       "description": "Comprehensive Malt development environment management - setup PHP projects, troubleshoot services, customize configurations, and convert malt.json to Docker Compose, Devbox, .env, GitHub Actions",
       "version": "1.0.0",
       "author": {

@@ -361,7 +361,6 @@ Read `malt.json` and generate equivalent `docker-compose.yml`:
 
 ```yaml
 # Generated from malt.json
-version: '3.8'
 services:
   php:
     image: php:8.4-fpm
