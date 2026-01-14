@@ -276,15 +276,20 @@ module Malt
       end
 
       # Clean up old temporary config files to prevent .tmp.tmp accumulation
+      # Only removes known malt config patterns: *.conf.tmp, *.ini.tmp, *.cnf.tmp
       def cleanup_old_temp_files(config)
         return unless config.conf_dir && Dir.exist?(config.conf_dir)
 
-        Dir.glob(File.join(config.conf_dir, "*.tmp")).each do |tmp_file|
-          begin
-            File.delete(tmp_file)
-            puts "Cleaned up old temp file: #{tmp_file}" if ENV["MALT_DEBUG"]
-          rescue => e
-            puts "Warning: Failed to delete #{tmp_file}: #{e.message}" if ENV["MALT_DEBUG"]
+        # Match only malt-managed temp config files
+        patterns = ["*.conf.tmp", "*.ini.tmp", "*.cnf.tmp"]
+        patterns.each do |pattern|
+          Dir.glob(File.join(config.conf_dir, pattern)).each do |tmp_file|
+            begin
+              File.delete(tmp_file)
+              puts "Cleaned up old temp file: #{tmp_file}" if ENV["MALT_DEBUG"]
+            rescue => e
+              puts "Warning: Failed to delete #{tmp_file}: #{e.message}" if ENV["MALT_DEBUG"]
+            end
           end
         end
       end
@@ -923,7 +928,10 @@ module Malt
         # Start with temporary config
         cmd = "#{HOMEBREW_PREFIX}/bin/httpd -f #{temp_conf}"
         puts "Running command: #{cmd}"
-        system("#{cmd} &")
+        unless system("#{cmd} &")
+          puts "Error: Failed to start Apache HTTPD on port #{port}"
+          return
+        end
         puts "Apache HTTPD starting in background..."
       end
 
