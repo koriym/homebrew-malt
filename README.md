@@ -344,7 +344,7 @@ Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](htt
 
 ## Claude Code Skill
 
-Malt includes a Claude Code skill that automatically analyzes your PHP project and sets up the optimal development environment.
+Malt includes a Claude Code skill for comprehensive development environment management - setup, troubleshooting, and customization.
 
 ### Installation
 
@@ -353,22 +353,30 @@ Malt includes a Claude Code skill that automatically analyzes your PHP project a
 /install koriym/homebrew-malt
 
 # Or manually copy the skill
-cp -r .claude/skills/malt-setup ~/.claude/skills/
+cp -r .claude/skills/malt ~/.claude/skills/
 ```
 
 ### Usage
 
-Simply ask Claude to set up your development environment:
+The skill handles multiple scenarios:
 
+**Setup:**
 - "Set up development environment for this PHP project"
 - "Initialize malt for this project"
-- "Configure local server environment"
+
+**Troubleshooting:**
+- "malt start fails with port error"
+- "MySQL won't start"
+
+**Customization:**
+- "How do I change the document root?"
+- "I need multiple MySQL instances"
 
 The skill will:
-1. Analyze `composer.json` to detect required services (MySQL, Redis, Memcached)
-2. Determine PHP version from constraints
-3. Choose web server (Nginx by default, Apache if `.htaccess` exists)
-4. Propose configuration and execute after confirmation
+1. Check prerequisites (Homebrew, Malt installation)
+2. Analyze `composer.json` to detect required services
+3. Guide troubleshooting with logs and port checks
+4. Help customize configuration files
 
 ## Documentation
 
