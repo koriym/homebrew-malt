@@ -348,6 +348,8 @@ Malt includes a Claude Code plugin for comprehensive development environment man
 
 ### Installation
 
+**Prerequisites:** Malt CLI must be installed first (see [Installation](#installation) section above).
+
 ```bash
 # Add the Malt marketplace
 /plugin marketplace add koriym/homebrew-malt
@@ -361,6 +363,8 @@ Or install directly from GitHub:
 ```bash
 /plugin install malt@koriym/homebrew-malt
 ```
+
+> **Note:** The plugin provides Claude with knowledge about Malt. The actual `malt` command requires the CLI to be installed via Homebrew.
 
 ### Usage
 
