@@ -344,16 +344,22 @@ Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](htt
 
 ## Claude Code Skill
 
-Malt includes a Claude Code skill for comprehensive development environment management - setup, troubleshooting, and customization.
+Malt includes a Claude Code skill for comprehensive development environment management - setup, troubleshooting, customization, and format conversion.
 
 ### Installation
 
-```bash
-# Add the Malt marketplace
-/install koriym/homebrew-malt
+Copy the skill to your Claude Code skills directory:
 
-# Or manually copy the skill
+```bash
+# Clone the repository
+git clone https://github.com/koriym/homebrew-malt.git
+cd homebrew-malt
+
+# Copy to personal skills (available in all projects)
 cp -r .claude/skills/malt ~/.claude/skills/
+
+# Or copy to project skills (shared with team via git)
+cp -r .claude/skills/malt /path/to/your-project/.claude/skills/
 ```
 
 ### Usage
@@ -372,11 +378,17 @@ The skill handles multiple scenarios:
 - "How do I change the document root?"
 - "I need multiple MySQL instances"
 
+**Convert (malt.json as SSOT):**
+- "Generate docker-compose.yml from malt.json"
+- "Generate GitHub Actions workflow from malt.json"
+- "Generate .env from malt.json"
+
 The skill will:
 1. Check prerequisites (Homebrew, Malt installation)
 2. Analyze `composer.json` to detect required services
 3. Guide troubleshooting with logs and port checks
 4. Help customize configuration files
+5. Convert malt.json to Docker Compose, Devbox, .env, GitHub Actions
 
 ## Documentation
 

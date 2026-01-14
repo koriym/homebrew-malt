@@ -1,6 +1,6 @@
 ---
 name: malt
-description: Comprehensive Malt development environment management. Set up PHP projects (analyzes composer.json), check prerequisites (Homebrew), troubleshoot services, and customize configurations. Use when user mentions "malt", "development environment", "local server", or needs help with PHP project environment.
+description: Comprehensive Malt development environment management. Set up PHP projects (analyzes composer.json), check prerequisites (Homebrew), troubleshoot services, customize configurations, and convert malt.json to other formats (Docker Compose, Devbox, .env, GitHub Actions). Use when user mentions "malt", "development environment", "local server", or needs help with PHP project environment.
 ---
 
 # Malt Skill
@@ -15,6 +15,7 @@ Comprehensive skill for managing Malt development environments - setup, troubles
 - User asks about Redis, MySQL, Memcached for their project
 - User has trouble starting/stopping services
 - User needs help with configuration customization
+- User wants to convert malt.json to other formats (Docker, Devbox, .env, CI)
 
 ## Workflow Overview
 
@@ -30,6 +31,9 @@ Comprehensive skill for managing Malt development environments - setup, troubles
 
 4. Customize (if needed)
    └─ Guide configuration file editing
+
+5. Convert (if requested)
+   └─ malt.json → Docker Compose, Devbox, .env, GitHub Actions
 ```
 
 ---
@@ -342,6 +346,147 @@ Check `composer.json`:
 2. Identifies conflicting process
 3. Suggests: kill process or change port in malt.json
 4. Helps restart services
+
+---
+
+## 5. Format Conversion (malt.json as SSOT)
+
+Use `malt.json` as the Single Source of Truth to generate other configuration formats.
+
+### Convert to Docker Compose
+
+**User:** "Generate docker-compose.yml from malt.json"
+
+Read `malt.json` and generate equivalent `docker-compose.yml`:
+
+```yaml
+# Generated from malt.json
+version: '3.8'
+services:
+  php:
+    image: php:8.4-fpm
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/var/www/html
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+
+volumes:
+  mysql_data:
+```
+
+### Convert to Devbox
+
+**User:** "Generate devbox.json from malt.json"
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "php84",
+    "mysql80",
+    "redis",
+    "nginx"
+  ],
+  "shell": {
+    "scripts": {
+      "start": "malt start",
+      "stop": "malt stop"
+    }
+  }
+}
+```
+
+### Convert to .env
+
+**User:** "Generate .env from malt.json"
+
+```env
+# Generated from malt.json
+PHP_VERSION=8.4
+PHP_PORT=9000
+
+MYSQL_VERSION=8.0
+MYSQL_PORT=3306
+MYSQL_HOST=127.0.0.1
+MYSQL_DATABASE=app
+MYSQL_USER=root
+MYSQL_PASSWORD=
+
+REDIS_PORT=6379
+REDIS_HOST=127.0.0.1
+
+NGINX_PORT=80
+```
+
+### Convert to GitHub Actions
+
+**User:** "Generate CI workflow from malt.json"
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test
+        ports:
+          - 3306:3306
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: redis, pdo_mysql
+      - run: composer install
+      - run: composer test
+```
+
+### Conversion Mapping Table
+
+| malt.json | Docker Compose | Devbox | GitHub Actions |
+|-----------|----------------|--------|----------------|
+| `php@8.4` | `php:8.4-fpm` | `php84` | `shivammathur/setup-php` |
+| `mysql@8.0` | `mysql:8.0` | `mysql80` | `services.mysql` |
+| `redis` | `redis:latest` | `redis` | `services.redis` |
+| `nginx` | `nginx:latest` | `nginx` | N/A (action runner) |
+| `memcached` | `memcached:latest` | `memcached` | `services.memcached` |
 
 ---
 
