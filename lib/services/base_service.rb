@@ -24,7 +24,7 @@ module Malt
         system("lsof", "-i", ":#{port}", "-sTCP:LISTEN", out: File::NULL, err: File::NULL)
       else
         # Pipe required for netstat | grep; port is validated as Integer above
-        system("netstat -tuln | grep :#{port} >/dev/null 2>&1")
+        system("netstat -tuln | grep -E ':#{port}\\b' >/dev/null 2>&1")
       end
     end
 
