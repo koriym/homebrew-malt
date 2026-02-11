@@ -23,8 +23,7 @@ module Malt
       if RUBY_PLATFORM =~ /darwin/
         system("lsof", "-i", ":#{port}", "-sTCP:LISTEN", out: File::NULL, err: File::NULL)
       else
-        # Pipe required for netstat | grep; port is validated as Integer above
-        system("netstat -tuln | grep -E ':#{port}\\b' >/dev/null 2>&1")
+        system("ss", "-tlnH", "sport", "=", ":#{port}", out: File::NULL, err: File::NULL)
       end
     end
 

@@ -108,21 +108,21 @@ module Malt
         end
       end
 
-      # Service display names for status
-      SERVICE_NAMES = {
-        "php" => "PHP-FPM",
-        "mysql" => "MySQL",
-        "redis" => "Redis",
-        "memcached" => "Memcached",
-        "nginx" => "Nginx",
-        "httpd" => "Apache HTTPD"
+      # Single source of truth: config_key => [display_name, process_pattern]
+      SERVICES = {
+        "php" => ["PHP-FPM", "php-fpm"],
+        "mysql" => ["MySQL", "mysqld"],
+        "redis" => ["Redis", "redis-server"],
+        "memcached" => ["Memcached", "memcached"],
+        "nginx" => ["Nginx", "nginx"],
+        "httpd" => ["Apache HTTPD", "httpd"],
       }.freeze
 
       def show_status(config)
         puts "Service status for #{config.project_name}:"
         puts ""
 
-        SERVICE_NAMES.each do |key, name|
+        SERVICES.each do |key, (name, _)|
           next unless config.has_service?(key)
 
           config.ports[key].each do |port|
@@ -132,18 +132,8 @@ module Malt
         end
       end
 
-      # Service definitions for kill: [process_pattern, display_name]
-      KILLABLE_SERVICES = [
-        ["php-fpm", "PHP-FPM"],
-        ["mysqld", "MySQL"],
-        ["redis-server", "Redis"],
-        ["memcached", "Memcached"],
-        ["nginx", "Nginx"],
-        ["httpd", "Apache HTTPD"],
-      ].freeze
-
       def kill_services
-        running = KILLABLE_SERVICES.select { |pattern, _| process_running?(pattern) }
+        running = SERVICES.values.select { |_, pattern| process_running?(pattern) }
 
         if running.empty?
           puts "No running instances of supported services were found."
@@ -151,10 +141,10 @@ module Malt
         end
 
         puts "About to forcibly terminate the following running services:"
-        running.each { |_, name| puts "- #{name}" }
+        running.each { |name, _| puts "- #{name}" }
         puts "(This command affects all instances, regardless of malt.json configuration)"
 
-        any_killed = running.map { |pattern, name| kill_service(pattern, name) }.any?
+        any_killed = running.map { |name, pattern| kill_service(pattern, name) }.any?
         puts "Forcible termination of services completed." if any_killed
       end
 
