@@ -102,7 +102,7 @@ This installs all services and extensions defined in your `malt.json`.
 malt create
 ```
 
-This generates all necessary configuration files in a [**malt** directory](https://github.com/koriym/homebrew-malt/tree/1.x/malt) within your project.
+This generates all necessary configuration files in a [**malt** directory](https://github.com/koriym/homebrew-malt/tree/1.x/malt) within your project. To regenerate from scratch, remove the directory first with `rm -rf malt/` and run `malt create` again.
 
 ### 4. Start services
 
