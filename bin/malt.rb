@@ -30,7 +30,6 @@ require 'service_manager'
 # Default options
 options = {
   config: nil,
-  force: false,
   verbose: false,
   debug: false
 }
@@ -58,7 +57,6 @@ def show_help
   puts ""
   puts "Options:"
   puts "  --config=FILE, -c      Specify a config file (default: ./malt.json)"
-  puts "  --force, -f            Force operation (e.g., recreate config files)"
   puts "  --verbose, -v          Verbose output"
   puts "  --debug, -d            Debug mode"
   puts "  --help, -h             Show this help message"
@@ -68,10 +66,6 @@ end
 OptionParser.new do |opts|
   opts.on("-c", "--config=FILE", "Specify config file") do |file|
     options[:config] = file
-  end
-
-  opts.on("-f", "--force", "Force operation (e.g., recreate config files)") do
-    options[:force] = true
   end
 
   opts.on("-v", "--verbose", "Verbose output") do

@@ -116,15 +116,9 @@ module Malt
       malt_dir = config.malt_dir
 
       if Dir.exist?(malt_dir)
-        unless options[:force]
-          puts "Malt directory already exists: #{malt_dir}"
-          puts "Run 'malt start' to start services, or 'malt create --force' to regenerate config files."
-          return
-        end
-
-        puts "Regenerating config files in: #{malt_dir}"
-        # Remove only conf directory to preserve data, logs, and tmp
-        FileUtils.rm_rf(config.conf_dir) if Dir.exist?(config.conf_dir)
+        puts "Malt directory already exists: #{malt_dir}"
+        puts "Run 'malt start' to start services."
+        return
       end
 
       %w(conf logs tmp var).each do |dir|

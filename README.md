@@ -171,7 +171,7 @@ This ensures that your environment definition is shared with the team, but tempo
 
 - `malt init` - Create a new malt.json configuration
 - `malt install` - Install dependencies from malt.json
-- `malt create` - Set up the environment (`--force` to regenerate config files)
+- `malt create` - Set up the environment
 - `malt start` - Start services
 - `malt stop` - Stop services
 - `malt status` - Show running status of configured services
