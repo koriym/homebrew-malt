@@ -88,7 +88,8 @@ module Malt
 
           json_data["php_extensions"].each do |ext|
             ext_lower = ext.downcase
-            formula_name = "#{ext_lower}@#{php_version}"
+            candidates = ["#{ext_lower}@#{php_version}", "php#{ext_lower}@#{php_version}", "php-#{ext_lower}@#{php_version}"]
+            formula_name = candidates.find { |name| installed_formulas.include?(name) } || candidates.first
             formula_installed = installed_formulas.include?(formula_name)
 
             if formula_installed
@@ -235,7 +236,10 @@ module Malt
       raise "Template file not found: #{php_ini_template_path}" unless File.exist?(php_ini_template_path)
 
       php_ini_template = Malt::Template.new(php_ini_template_path)
-      php_extensions = config.php_extensions.map { |ext| ext == "xdebug" ? "zend_extension=#{ext}.so" : "extension=#{ext}.so" }.join("\n")
+      php_extensions = config.php_extensions.map { |ext|
+        so_path = resolve_extension_path(ext, config.php_version)
+        ext == "xdebug" ? "zend_extension=#{so_path}" : "extension=#{so_path}"
+      }.join("\n")
       content = php_ini_template.render({ MALT_DIR: "{{MALT_DIR}}", PHP_EXTENSIONS: php_extensions })
       File.write(File.join(config.malt_dir, "conf", "php.ini"), content)
     end
@@ -309,6 +313,21 @@ module Malt
           content = memcached_template.render({ PORT: port, MALT_DIR: "{{MALT_DIR}}" })
           File.write(File.join(config.malt_dir, "conf", "memcached_#{port}.conf"), content)
         end
+      end
+    end
+
+    def self.resolve_extension_path(ext, php_version)
+      candidates = [
+        File.join(HOMEBREW_PREFIX, "opt", "#{ext}@#{php_version}", "#{ext}.so"),
+        File.join(HOMEBREW_PREFIX, "opt", "php#{ext}@#{php_version}", "#{ext}.so"),
+        File.join(HOMEBREW_PREFIX, "opt", "php-#{ext}@#{php_version}", "#{ext}.so"),
+      ]
+      found = candidates.find { |path| File.exist?(path) }
+      if found
+        found
+      else
+        puts "  Warning: Could not find #{ext}.so in Homebrew opt paths, using bare name"
+        "#{ext}.so"
       end
     end
   end
