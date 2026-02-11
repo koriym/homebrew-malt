@@ -4,7 +4,7 @@ require "fileutils"
 
 module Malt
   # Homebrew prefix constant shared across services
-  HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || "/opt/homebrew"
+  HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || `brew --prefix`.chomp
 
   # Base service class providing common functionality for all services
   class BaseService
