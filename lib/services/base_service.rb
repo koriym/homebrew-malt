@@ -15,11 +15,15 @@ module Malt
 
     # Check if a port is already in use
     def port_in_use?(port)
+      self.class.port_in_use?(port)
+    end
+
+    def self.port_in_use?(port)
       port = Integer(port) # Validate port is numeric
-      # Use different commands for macOS and Linux
       if RUBY_PLATFORM =~ /darwin/
-        system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")
+        system("lsof", "-i", ":#{port}", "-sTCP:LISTEN", out: File::NULL, err: File::NULL)
       else
+        # Pipe required for netstat | grep; port is validated as Integer above
         system("netstat -tuln | grep :#{port} >/dev/null 2>&1")
       end
     end

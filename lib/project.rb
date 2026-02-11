@@ -124,8 +124,7 @@ module Malt
 
         puts "Regenerating config files in: #{malt_dir}"
         # Remove only conf directory to preserve data, logs, and tmp
-        conf_dir = File.join(malt_dir, "conf")
-        FileUtils.rm_rf(conf_dir) if Dir.exist?(conf_dir)
+        FileUtils.rm_rf(config.conf_dir) if Dir.exist?(config.conf_dir)
       end
 
       %w(conf logs tmp var).each do |dir|

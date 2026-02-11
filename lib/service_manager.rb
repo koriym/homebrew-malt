@@ -93,7 +93,7 @@ module Malt
       end
 
       def port_in_use?(port)
-        Malt::BaseService.new.port_in_use?(port)
+        Malt::BaseService.port_in_use?(port)
       end
 
       def stop_services(config)
@@ -139,7 +139,7 @@ module Malt
         ["redis-server", "Redis"],
         ["memcached", "Memcached"],
         ["nginx", "Nginx"],
-        ["httpd", "Apache HTTPD"]
+        ["httpd", "Apache HTTPD"],
       ].freeze
 
       def kill_services
@@ -159,20 +159,20 @@ module Malt
       end
 
       def process_running?(pattern)
-        system("pgrep -f '#{pattern}' >/dev/null 2>&1")
+        system("pgrep", "-f", pattern, out: File::NULL, err: File::NULL)
       end
 
       def kill_service(pattern, name)
         return false unless process_running?(pattern)
 
         puts "Forcibly terminating #{name}..."
-        system("pkill -9 -f '#{pattern}'")
+        system("pkill", "-9", "-f", pattern)
         sleep 0.5
 
         # Retry if still running
         if process_running?(pattern)
           warn "Warning: #{name} processes still running despite SIGKILL, retrying..."
-          system("pkill -9 -f '#{pattern}'")
+          system("pkill", "-9", "-f", pattern)
           sleep 0.5
         end
 
