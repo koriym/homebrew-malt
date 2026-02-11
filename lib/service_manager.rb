@@ -30,6 +30,13 @@ module Malt
       kill_services
     end
 
+    def self.status(options)
+      config_path = find_config_in_current_dir(options)
+      config = Malt::Config.new(config_path)
+
+      show_status(config)
+    end
+
     class << self
       private
 
@@ -68,12 +75,12 @@ module Malt
         web_servers = []
         if config.has_service?("httpd")
           config.ports["httpd"].each do |port|
-            web_servers << "http://127.0.0.1:#{port}/" if is_port_in_use(port)
+            web_servers << "http://127.0.0.1:#{port}/" if port_in_use?(port)
           end
         end
         if config.has_service?("nginx")
           config.ports["nginx"].each do |port|
-            web_servers << "http://127.0.0.1:#{port}/" if is_port_in_use(port)
+            web_servers << "http://127.0.0.1:#{port}/" if port_in_use?(port)
           end
         end
 
@@ -85,14 +92,8 @@ module Malt
         end
       end
 
-      # Port in use check for ServiceManager class method
-      def is_port_in_use(port)
-        # Use different commands for macOS and Linux
-        if RUBY_PLATFORM =~ /darwin/
-          system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")
-        else
-          system("netstat -tuln | grep :#{port} >/dev/null 2>&1")
-        end
+      def port_in_use?(port)
+        Malt::BaseService.port_in_use?(port)
       end
 
       def stop_services(config)
@@ -107,167 +108,67 @@ module Malt
         end
       end
 
-      def kill_services
-        # First check if any supported services are running
-        any_running = false
-        any_running ||= system("pgrep -f php-fpm >/dev/null 2>&1")
-        any_running ||= system("pgrep -f 'mysqld' >/dev/null 2>&1")
-        any_running ||= system("pgrep -f redis-server >/dev/null 2>&1")
-        any_running ||= system("pgrep -f memcached >/dev/null 2>&1")
-        any_running ||= system("pgrep -f nginx >/dev/null 2>&1")
-        any_running ||= system("pgrep -f httpd >/dev/null 2>&1")
+      # Single source of truth: config_key => [display_name, process_pattern]
+      SERVICES = {
+        "php" => ["PHP-FPM", "php-fpm"],
+        "mysql" => ["MySQL", "mysqld"],
+        "redis" => ["Redis", "redis-server"],
+        "memcached" => ["Memcached", "memcached"],
+        "nginx" => ["Nginx", "nginx"],
+        "httpd" => ["Apache HTTPD", "httpd"],
+      }.freeze
 
-        # If no services are running, exit early
-        unless any_running
+      def show_status(config)
+        puts "Service status for #{config.project_name}:"
+        puts ""
+
+        SERVICES.each do |key, (name, _)|
+          next unless config.has_service?(key)
+
+          config.ports[key].each do |port|
+            status = port_in_use?(port) ? "running" : "stopped"
+            puts "  #{name} (port #{port}): #{status}"
+          end
+        end
+      end
+
+      def kill_services
+        running = SERVICES.values.select { |_, pattern| process_running?(pattern) }
+
+        if running.empty?
           puts "No running instances of supported services were found."
           return
         end
 
-        # Display message about what will be terminated
         puts "About to forcibly terminate the following running services:"
-        puts "- PHP-FPM" if system("pgrep -f php-fpm >/dev/null 2>&1")
-        puts "- MySQL" if system("pgrep -f 'mysqld' >/dev/null 2>&1")
-        puts "- Redis" if system("pgrep -f redis-server >/dev/null 2>&1")
-        puts "- Memcached" if system("pgrep -f memcached >/dev/null 2>&1")
-        puts "- Nginx" if system("pgrep -f nginx >/dev/null 2>&1")
-        puts "- Apache HTTPD" if system("pgrep -f httpd >/dev/null 2>&1")
+        running.each { |name, _| puts "- #{name}" }
         puts "(This command affects all instances, regardless of malt.json configuration)"
 
-        # Proceed with termination
-        any_service_killed = false
-
-        any_service_killed |= kill_php_fpm
-        any_service_killed |= kill_mysql
-        any_service_killed |= kill_redis
-        any_service_killed |= kill_memcached
-        any_service_killed |= kill_nginx
-        any_service_killed |= kill_apache
-
-        puts "Forcible termination of services completed." if any_service_killed
+        any_killed = running.map { |name, pattern| kill_service(pattern, name) }.any?
+        puts "Forcible termination of services completed." if any_killed
       end
 
-      def kill_php_fpm
-        return false unless system("pgrep -f php-fpm >/dev/null 2>&1")
-
-        puts "Forcibly terminating PHP-FPM..."
-        if system("pkill -9 -f php-fpm")
-          true
-        else
-          puts "Warning: Failed to forcibly terminate PHP-FPM"
-          false
-        end
+      def process_running?(pattern)
+        system("pgrep", "-f", pattern, out: File::NULL, err: File::NULL)
       end
 
-      def kill_mysql
-        return false unless system("pgrep -f 'mysqld' >/dev/null 2>&1")
+      def kill_service(pattern, name)
+        return false unless process_running?(pattern)
 
-        puts "Forcibly terminating MySQL..."
-        puts "Using immediate termination for MySQL (SIGKILL)..."
-        success = system("pkill -9 -f 'mysqld'")
-        puts "SIGKILL to MySQL processes #{success ? 'sent' : 'failed'}"
-
-        # Wait a moment for processes to terminate
+        puts "Forcibly terminating #{name}..."
+        system("pkill", "-9", "-f", pattern)
         sleep 0.5
 
-        # Double check if processes are gone
-        if system("pgrep -f 'mysqld' >/dev/null 2>&1")
-          puts "Warning: MySQL processes still running despite SIGKILL"
-          system("pkill -9 -f 'mysqld'")
+        # Retry if still running
+        if process_running?(pattern)
+          warn "Warning: #{name} processes still running despite SIGKILL, retrying..."
+          system("pkill", "-9", "-f", pattern)
           sleep 0.5
-          success = !system("pgrep -f 'mysqld' >/dev/null 2>&1")
         end
 
-        puts "MySQL forceful termination #{success ? 'successful' : 'failed'}"
-        success
-      end
-
-      def kill_redis
-        return false unless system("pgrep -f redis-server >/dev/null 2>&1")
-
-        puts "Forcibly terminating Redis..."
-        puts "Using immediate termination for Redis (SIGKILL)..."
-        success = system("pkill -9 -f redis-server")
-        puts "SIGKILL to Redis processes #{success ? 'sent' : 'failed'}"
-
-        # Wait a moment for processes to terminate
-        sleep 0.5
-
-        # Double check if processes are gone
-        if system("pgrep -f redis-server >/dev/null 2>&1")
-          puts "Warning: Redis processes still running despite SIGKILL"
-          system("pkill -9 -f redis-server")
-          sleep 0.5
-          success = !system("pgrep -f redis-server >/dev/null 2>&1")
-        else
-          puts "Redis forceful termination successful"
-        end
-
-        success
-      end
-
-      def kill_memcached
-        return false unless system("pgrep -f memcached >/dev/null 2>&1")
-
-        puts "Forcibly terminating Memcached..."
-        if system("pkill -9 -f memcached")
-          sleep 0.5
-          if system("pgrep -f memcached >/dev/null 2>&1")
-            puts "Warning: Memcached processes still running despite SIGKILL"
-            system("pkill -9 -f memcached")
-            sleep 0.5
-            !system("pgrep -f memcached >/dev/null 2>&1")
-          else
-            true
-          end
-        else
-          puts "Warning: Failed to forcibly terminate Memcached"
-          false
-        end
-      end
-
-      def kill_nginx
-        return false unless system("pgrep -f nginx >/dev/null 2>&1")
-
-        puts "Forcibly terminating Nginx..."
-        puts "Using immediate termination for Nginx (SIGKILL)..."
-        success = system("pkill -9 -f nginx")
-        puts "SIGKILL to Nginx processes #{success ? 'sent' : 'failed'}"
-
-        # Wait a moment for processes to terminate
-        sleep 0.5
-
-        # Double check if processes are gone
-        if system("pgrep -f nginx >/dev/null 2>&1")
-          puts "Warning: Nginx processes still running despite SIGKILL"
-          system("pkill -9 -f nginx")
-          sleep 0.5
-          success = !system("pgrep -f nginx >/dev/null 2>&1")
-        else
-          puts "Nginx forceful termination successful"
-        end
-
-        success
-      end
-
-      def kill_apache
-        return false unless system("pgrep -f httpd >/dev/null 2>&1")
-
-        puts "Forcibly terminating Apache HTTPD..."
-        if system("pkill -9 -f httpd")
-          sleep 0.5
-          if system("pgrep -f httpd >/dev/null 2>&1")
-            puts "Warning: Apache processes still running despite SIGKILL"
-            system("pkill -9 -f httpd")
-            sleep 0.5
-            !system("pgrep -f httpd >/dev/null 2>&1")
-          else
-            puts "Apache HTTPD forceful termination successful"
-            true
-          end
-        else
-          puts "Warning: Failed to forcibly terminate Apache HTTPD"
-          false
-        end
+        still_running = process_running?(pattern)
+        warn "Warning: Failed to forcibly terminate #{name}" if still_running
+        !still_running
       end
 
       # Clean up old temporary config files to prevent .tmp.tmp accumulation

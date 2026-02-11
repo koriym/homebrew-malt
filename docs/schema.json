@@ -5,9 +5,6 @@
         "project_name": {
             "type": "string"
         },
-        "public_dir": {
-            "type": "string"
-        },
         "dependencies": {
             "type": "array",
             "items": {
@@ -65,7 +62,6 @@
     },
     "required": [
         "project_name",
-        "public_dir",
         "dependencies",
         "ports",
         "php_extensions"

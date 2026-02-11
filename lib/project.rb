@@ -121,7 +121,6 @@ module Malt
         return
       end
 
-
       %w(conf logs tmp var).each do |dir|
         dir_path = File.join(malt_dir, dir)
         FileUtils.mkdir_p(dir_path)

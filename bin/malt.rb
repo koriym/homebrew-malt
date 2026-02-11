@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-HOMEBREW_PREFIX = `brew --prefix`.strip
-
 # Replace MAL_IS_LOCAL with the actual value by the installer
 # Or you can run directly in the local file (eg, `ruby bin/malt.rb`)
 MALT_IS_LOCAL = true
@@ -51,6 +49,7 @@ def show_help
   puts "  create                 Create malt environment in project directory"
   puts "  start                  Start services configured in malt.json"
   puts "  stop                   Stop services configured in malt.json"
+  puts "  status                 Show running status of configured services"
   puts "  kill                   Forcibly stop all services (not limited to malt.json config)"
   puts "  source <(malt env)     Set up service paths"
   puts "  info                   Show information about the current project"
@@ -117,6 +116,8 @@ begin
     Malt::ServiceManager.start(options)
   when "stop"
     Malt::ServiceManager.stop(options)
+  when "status"
+    Malt::ServiceManager.status(options)
   when "kill"
     Malt::ServiceManager.kill(options)
   when "env"

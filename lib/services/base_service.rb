@@ -4,7 +4,7 @@ require "fileutils"
 
 module Malt
   # Homebrew prefix constant shared across services
-  HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || "/opt/homebrew"
+  HOMEBREW_PREFIX = ENV["HOMEBREW_PREFIX"] || `brew --prefix`.chomp
 
   # Base service class providing common functionality for all services
   class BaseService
@@ -15,12 +15,15 @@ module Malt
 
     # Check if a port is already in use
     def port_in_use?(port)
+      self.class.port_in_use?(port)
+    end
+
+    def self.port_in_use?(port)
       port = Integer(port) # Validate port is numeric
-      # Use different commands for macOS and Linux
       if RUBY_PLATFORM =~ /darwin/
-        system("lsof -i :#{port} -sTCP:LISTEN >/dev/null 2>&1")
+        system("lsof", "-i", ":#{port}", "-sTCP:LISTEN", out: File::NULL, err: File::NULL)
       else
-        system("netstat -tuln | grep :#{port} >/dev/null 2>&1")
+        system("ss", "-tlnH", "sport", "=", ":#{port}", out: File::NULL, err: File::NULL)
       end
     end
 
