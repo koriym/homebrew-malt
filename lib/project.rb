@@ -237,8 +237,9 @@ module Malt
 
       php_ini_template = Malt::Template.new(php_ini_template_path)
       php_extensions = config.php_extensions.map { |ext|
-        so_path = resolve_extension_path(ext, config.php_version)
-        ext == "xdebug" ? "zend_extension=#{so_path}" : "extension=#{so_path}"
+        ext_lower = ext.downcase
+        so_path = resolve_extension_path(ext_lower, config.php_version)
+        ext_lower == "xdebug" ? "zend_extension=#{so_path}" : "extension=#{so_path}"
       }.join("\n")
       content = php_ini_template.render({ MALT_DIR: "{{MALT_DIR}}", PHP_EXTENSIONS: php_extensions })
       File.write(File.join(config.malt_dir, "conf", "php.ini"), content)
