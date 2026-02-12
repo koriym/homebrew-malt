@@ -130,6 +130,21 @@ module Malt
       yield temp_conf
     end
 
+    # Wait for a process matching the pattern to terminate.
+    # Sends SIGKILL as a fallback if SIGTERM doesn't work within the timeout.
+    def wait_for_process_stop(pattern, timeout: 10)
+      timeout.times do
+        return unless system("pgrep -f #{pattern} >/dev/null 2>&1")
+        sleep 1
+      end
+
+      return unless system("pgrep -f #{pattern} >/dev/null 2>&1")
+
+      warn "Warning: #{pattern} still running after SIGTERM, sending SIGKILL..."
+      system("pkill -9 -f #{pattern}")
+      sleep 1
+    end
+
     # Remove temporary config file
     def remove_temp_config(temp_path)
       FileUtils.rm(temp_path) if File.exist?(temp_path)

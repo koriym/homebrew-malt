@@ -38,6 +38,7 @@ module Malt
       if system("pgrep -f memcached >/dev/null 2>&1")
         puts "Stopping Memcached..."
         system("pkill -f memcached")
+        wait_for_process_stop("memcached")
       else
         puts "[Stopped] Memcached is not running"
       end

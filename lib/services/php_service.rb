@@ -63,6 +63,7 @@ module Malt
       if system("pgrep -f php-fpm >/dev/null 2>&1")
         puts "Stopping PHP-FPM..."
         system("pkill -f php-fpm")
+        wait_for_process_stop("php-fpm")
 
         # Clean up temporary files
         if Dir.exist?(File.join(Dir.pwd, "malt", "conf"))
