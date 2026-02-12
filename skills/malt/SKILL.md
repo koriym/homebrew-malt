@@ -52,7 +52,7 @@ brew install malt
 | `composer.json` | `php` require constraint | PHP version (e.g., `^8.1` -> `php@8.1`) |
 | `composer.json` | `ext-redis` or `predis/predis` | Redis |
 | `composer.json` | `ext-memcached` | Memcached |
-| `composer.json` | `ext-pdo_mysql` or `doctrine/*` | MySQL |
+| `composer.json` | `ext-pdo_mysql` | MySQL |
 | Filesystem | `.htaccess` file exists | Apache (`httpd`); otherwise Nginx |
 
 2. Report detected dependencies and generate `malt.json`:
