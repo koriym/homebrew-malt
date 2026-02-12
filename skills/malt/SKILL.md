@@ -23,19 +23,37 @@ Malt creates project-specific development environments using only Homebrew. Defi
 
 ## Setup Guide
 
+### Prerequisites
+
+Before any malt operation, verify Homebrew and Malt are installed:
+
+```bash
+which brew   # Homebrew required
+which malt   # Malt CLI required
+```
+
+If Homebrew is missing, direct the user to https://brew.sh/. If Malt is missing:
+
+```bash
+brew tap shivammathur/php
+brew tap shivammathur/extensions
+brew tap koriym/malt
+brew install malt
+```
+
 ### Setup Flow
 
 #### When `composer.json` exists (PHP project)
 
 1. Read `composer.json` to auto-detect requirements:
 
-| Dependency Pattern | Service |
-|-------------------|---------|
-| `php` require constraint | PHP version (e.g., `^8.1` -> `php@8.1`) |
-| `ext-redis` or `predis/predis` | Redis |
-| `ext-memcached` | Memcached |
-| `ext-pdo_mysql` or `doctrine/*` | MySQL |
-| `.htaccess` file exists | Apache (`httpd`); otherwise Nginx |
+| Source | Pattern | Service |
+|--------|---------|---------|
+| `composer.json` | `php` require constraint | PHP version (e.g., `^8.1` -> `php@8.1`) |
+| `composer.json` | `ext-redis` or `predis/predis` | Redis |
+| `composer.json` | `ext-memcached` | Memcached |
+| `composer.json` | `ext-pdo_mysql` or `doctrine/*` | MySQL |
+| Filesystem | `.htaccess` file exists | Apache (`httpd`); otherwise Nginx |
 
 2. Report detected dependencies and generate `malt.json`:
 
@@ -57,7 +75,7 @@ Ask the user what services they need in natural language. Example interactions:
 - "MySQL and Redis are needed" -> generate `malt.json` with MySQL and Redis
 - "Set up a PHP 8.4 environment with Nginx" -> generate accordingly
 
-Then confirm the proposed `malt.json` with `AskUserQuestion` before proceeding.
+Then present the proposed `malt.json` and confirm with `AskUserQuestion` before proceeding.
 
 ### Setup Commands
 
@@ -116,7 +134,7 @@ All fields are required. Schema: `docs/schema.json`
 |-------|------|-------------|
 | `project_name` | string | Project identifier |
 | `dependencies` | string[] | Homebrew formula names (services, tools, PHP version) |
-| `ports` | object | Service name -> port array. Keys: `php`, `mysql`, `nginx`, `httpd`, `redis`, `memcached`, `postgresql`. Multiple ports create multiple instances |
+| `ports` | object | Service name -> port array. Keys: `php`, `mysql`, `nginx`, `httpd`, `redis`, `memcached`. Multiple ports create multiple instances |
 | `php_extensions` | string[] | PHP extensions to install via `shivammathur/extensions` tap |
 
 ## Troubleshooting Guide
@@ -310,12 +328,79 @@ Use `malt.json` as Single Source of Truth to generate other formats.
 
 ### Docker Compose
 
-Read `malt.json` and generate `docker-compose.yml` mapping each service to its Docker image, ports from `ports`, and appropriate volumes.
+Read `malt.json` and generate `docker-compose.yml`:
+
+```yaml
+services:
+  php:
+    image: php:8.4-fpm
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/var/www/html
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - mysql_data:/var/lib/mysql
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+volumes:
+  mysql_data:
+```
 
 ### .env
 
-Generate environment variables from `malt.json`: version numbers, ports, and `127.0.0.1` as host for all services.
+Generate environment variables from `malt.json`:
+
+```env
+PHP_VERSION=8.4
+PHP_PORT=9000
+MYSQL_PORT=3306
+MYSQL_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_HOST=127.0.0.1
+NGINX_PORT=80
+```
 
 ### GitHub Actions
 
-Generate CI workflow using `shivammathur/setup-php` for PHP and GitHub Actions `services` for MySQL, Redis, etc.
+Generate CI workflow using `shivammathur/setup-php` for PHP and GitHub Actions `services`:
+
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: redis, pdo_mysql
+      - run: composer install
+      - run: composer test
+```
