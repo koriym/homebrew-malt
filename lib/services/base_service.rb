@@ -134,14 +134,14 @@ module Malt
     # Sends SIGKILL as a fallback if SIGTERM doesn't work within the timeout.
     def wait_for_process_stop(pattern, timeout: 10)
       timeout.times do
-        return unless system("pgrep -f #{pattern} >/dev/null 2>&1")
+        return unless system("pgrep", "-f", pattern, out: File::NULL, err: File::NULL)
         sleep 1
       end
 
-      return unless system("pgrep -f #{pattern} >/dev/null 2>&1")
+      return unless system("pgrep", "-f", pattern, out: File::NULL, err: File::NULL)
 
       warn "Warning: #{pattern} still running after SIGTERM, sending SIGKILL..."
-      system("pkill -9 -f #{pattern}")
+      system("pkill", "-9", "-f", pattern, out: File::NULL, err: File::NULL)
       sleep 1
     end
 
