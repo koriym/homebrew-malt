@@ -35,9 +35,9 @@ module Malt
 
     def stop_memcached
       # Check if Memcached is running
-      if system("pgrep -f memcached >/dev/null 2>&1")
+      if system("pgrep", "-f", "memcached", out: File::NULL, err: File::NULL)
         puts "Stopping Memcached..."
-        system("pkill -f memcached")
+        system("pkill", "-f", "memcached", out: File::NULL, err: File::NULL)
         wait_for_process_stop("memcached")
       else
         puts "[Stopped] Memcached is not running"

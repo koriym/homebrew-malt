@@ -60,9 +60,9 @@ module Malt
     end
 
     def stop_php_fpm
-      if system("pgrep -f php-fpm >/dev/null 2>&1")
+      if system("pgrep", "-f", "php-fpm", out: File::NULL, err: File::NULL)
         puts "Stopping PHP-FPM..."
-        system("pkill -f php-fpm")
+        system("pkill", "-f", "php-fpm", out: File::NULL, err: File::NULL)
         wait_for_process_stop("php-fpm")
 
         # Clean up temporary files
