@@ -397,7 +397,9 @@ The skill will:
 
 ## Documentation
 
-Full documentation is available at [https://koriym.github.io/homebrew-malt/index.html](https://koriym.github.io/homebrew-malt/index.html)
+- [Full documentation](https://koriym.github.io/homebrew-malt/index.html)
+- [llms.txt](docs/llms.txt) - LLM-friendly project summary
+- [llms-full.txt](docs/llms-full.txt) - LLM-friendly full reference
 
 ## License
 
