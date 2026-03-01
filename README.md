@@ -353,19 +353,19 @@ Malt is available as a Claude Code skill for comprehensive development environme
 
 Add the Malt marketplace in Claude Code:
 
-```
+```text
 /plugin marketplace add koriym/homebrew-malt
 ```
 
 Then install the skill:
 
-```
+```text
 /plugin install malt@koriym-malt
 ```
 
 Or install directly from GitHub without adding the marketplace:
 
-```
+```text
 /plugin install malt@koriym/homebrew-malt
 ```
 

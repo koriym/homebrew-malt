@@ -26,6 +26,8 @@ For existing projects (joining a team or second machine):
 malt install && malt start && source <(malt env)
 ```
 
+> If `malt/` is not present, run `malt create` before `malt start`.
+
 ## malt.json
 
 Single source of truth for the project environment. All fields are required.

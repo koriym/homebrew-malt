@@ -329,12 +329,12 @@ Malt is language-agnostic. For Ruby, Go, or Node.js projects, use Malt to manage
 {
   "project_name": "my_rails_app",
   "dependencies": ["ruby@3.2", "mysql@8.0", "redis"],
-  "ports": {"mysql": [3306], "redis": [6379]},
+  "ports": {"php": [9000], "mysql": [3306], "redis": [6379]},
   "php_extensions": []
 }
 ```
 
-Note: `php_extensions` is required in the schema even if empty. The `php` port is required by `validate!` in the current implementation.
+Note: `php_extensions` is required in the schema even if empty. The `php` port is also required by `validate!` in the current implementation — include it even for non-PHP projects.
 
 ## Architecture (for developers)
 
