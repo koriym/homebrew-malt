@@ -31,6 +31,8 @@ For existing projects (joining a team or second machine):
 malt install && malt start && source <(malt env)
 ```
 
+> If `malt/` is not present, run `malt create` before `malt start`.
+
 ## malt.json Schema
 
 Single source of truth for the project environment. All fields are required.
@@ -99,7 +101,7 @@ Outputs a shell script that exports environment variables and creates aliases:
 - `MALT_DIR` — Absolute path to malt/ directory
 - `DOCUMENT_ROOT` — Absolute path to public/ directory
 - `PATH` — Prepends version-specific binary directories for PHP and MySQL
-- Service aliases: `mysql@3306`, `redis-cli@6379`, `psql@5432`, etc.
+- Service aliases: `mysql@3306`, `redis-cli@6379`, etc.
 
 Usage: `source <(malt env)`
 
