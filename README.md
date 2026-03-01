@@ -343,29 +343,33 @@ Both tools are cross-platform and offer declarative configuration.
 
 Brew infrastructure code from your malt.json using our [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html).
 
-## Claude Code Plugin
+## Claude Code Marketplace
 
-Malt includes a Claude Code plugin for comprehensive development environment management - setup, troubleshooting, customization, and format conversion.
+Malt is available as a Claude Code skill for comprehensive development environment management — setup, troubleshooting, customization, and format conversion.
 
-### Installation
+### Install from Marketplace
 
-**Prerequisites:** Malt CLI must be installed first (see [Installation](#installation) section above).
+**Prerequisites:** Malt CLI must be installed first (see [Installation](#installation) above).
 
-```bash
-# Add the Malt marketplace
+Add the Malt marketplace in Claude Code:
+
+```
 /plugin marketplace add koriym/homebrew-malt
+```
 
-# Install the plugin
+Then install the skill:
+
+```
 /plugin install malt@koriym-malt
 ```
 
-Or install directly from GitHub:
+Or install directly from GitHub without adding the marketplace:
 
-```bash
+```
 /plugin install malt@koriym/homebrew-malt
 ```
 
-> **Note:** The plugin provides Claude with knowledge about Malt. The actual `malt` command requires the CLI to be installed via Homebrew.
+> **Note:** The skill provides Claude with knowledge about Malt. The actual `malt` command still requires the CLI to be installed via Homebrew.
 
 ### Usage
 

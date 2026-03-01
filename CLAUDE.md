@@ -10,133 +10,77 @@ Malt is a JSON-driven development environment manager that creates project-speci
 
 ### Core Components
 
-- **bin/malt.rb** - Main CLI entry point that handles command routing and option parsing
-- **lib/config.rb** - Configuration parser and validator for `malt.json` files
-- **lib/project.rb** - Project initialization, dependency installation, and configuration file generation
-- **lib/service_manager.rb** - Service lifecycle management (start/stop/kill) with individual service classes for PHP-FPM, MySQL, Redis, Memcached, Nginx, and Apache
-- **lib/template.rb** - ERB template rendering for configuration files
-- **Formula/malt.rb** - Homebrew formula for Malt installation
-- **share/templates/** - ERB templates for all service configuration files (PHP, MySQL, Redis, Nginx, Apache, Memcached)
-- **share/default.json** - Default malt.json template
+- **bin/malt.rb** - Main CLI entry point. `MALT_IS_LOCAL = true` flag enables running from source; the Formula replaces this with `false` and substitutes path placeholders at install time.
+- **lib/config.rb** - `Malt::Config` parses `malt.json`. `validate!` requires `php` ports even for non-PHP projects.
+- **lib/project.rb** - Project setup: `init`, `install_deps`, `create`, `env_script`, `info`. Contains `resolve_extension_path` for PHP extension `.so` lookup.
+- **lib/service_manager.rb** - Orchestrates start/stop/kill/status. Services start in declaration order, stop in reverse.
+- **lib/template.rb** - `Malt::Template` renders files with `{{VARIABLE}}` substitution. Despite `.erb` extensions, templates do NOT use ERB (`<%= %>`).
+- **lib/services/** - Individual service classes (`PhpService`, `MysqlService`, `RedisService`, `MemcachedService`, `NginxService`, `HttpdService`) all inherit from `BaseService`.
+- **share/templates/** - Template files (`.erb` extension) using `{{VARIABLE}}` placeholders for `malt create`.
+- **share/default.json** - Default `malt.json` template. Schema at `docs/schema.json`.
 
-### Key Design Patterns
+### Two-Phase Variable Substitution
 
-1. **Variable Substitution**: Configuration templates use `{{VARIABLE}}` placeholders that get replaced with actual values at runtime. Key variables include:
-   - `{{MALT_DIR}}` - Project-relative path to the malt/ directory
-   - `{{HOMEBREW_PREFIX}}` - Homebrew installation prefix
-   - `{{PHP_VERSION}}` - PHP version from dependencies
-   - `{{PROJECT_DIR}}` - Project root directory
+Config generation happens in two phases:
 
-2. **Temporary Configuration Files**: Services use `.tmp` files created by `create_temp_config` that perform variable expansion. These are cleaned up on service stop (unless `MALT_DEBUG=1`).
+1. **`malt create`** (Project.generate_config_files): Renders ERB templates with port/index values resolved immediately. Runtime variables (`{{MALT_DIR}}`, `{{HOMEBREW_PREFIX}}`, `{{PHP_VERSION}}`, `{{PROJECT_DIR}}`) are written as literal `{{VARIABLE}}` strings into the output files in `malt/conf/`.
 
-3. **Service Isolation**: Each service class (PhpService, MysqlService, etc.) inherits from BaseService and implements `start(config)` and `stop(config)` methods.
+2. **`malt start`** (BaseService.create_temp_config): Reads conf files from `malt/conf/`, expands the remaining `{{VARIABLE}}` placeholders with actual runtime values, and writes `.tmp` files (e.g., `nginx_80.conf.tmp`). These `.tmp` files are passed to the actual service processes. Cleanup happens on `malt stop` unless `MALT_DEBUG=1`.
 
-4. **Port-based Separation**: Multiple instances of the same service run on different ports defined in `malt.json`'s `ports` hash.
+### Key Implementation Details
+
+- `HOMEBREW_PREFIX` is resolved once at load time: `ENV["HOMEBREW_PREFIX"] || \`brew --prefix\`.chomp`
+- MySQL version is **hardcoded to `8.0`** in `mysql_service.rb` (initialization and startup commands). PHP version is read from `dependencies` (defaults to `8.4`).
+- PHP extension `.so` paths are resolved by `resolve_extension_path`: tries `{ext}@{php_version}`, `php{ext}@{php_version}`, `php-{ext}@{php_version}` under `HOMEBREW_PREFIX/opt/`.
+- Port-in-use check: `lsof` on macOS, `ss` on Linux.
+- Multiple instances of a service run on different ports (e.g., `"php": [9000, 9001]`).
+- Nginx uses a main config (`nginx_main.conf`) that includes per-port `.conf.tmp` files.
+- MySQL requires data directory initialization on first start (`--initialize-insecure`). Each MySQL instance gets its own data dir `malt/var/mysql_{index}/`.
 
 ## Development Commands
 
 ### Running Malt Locally (Development Mode)
 
-When `MALT_IS_LOCAL = true` in bin/malt.rb, Malt runs directly from the repository without installation:
-
 ```bash
-# Run malt directly from source
+# Run malt directly from source (MALT_IS_LOCAL = true in bin/malt.rb)
 ruby bin/malt.rb init
 ruby bin/malt.rb install
 ruby bin/malt.rb create
 ruby bin/malt.rb start
 ruby bin/malt.rb stop
+ruby bin/malt.rb status
+```
+
+### Debugging
+
+```bash
+# Keep .tmp files and show variable substitution details
+MALT_DEBUG=1 ruby bin/malt.rb start
 ```
 
 ### Testing the Homebrew Formula
 
 ```bash
-# Install from local tap
 brew install --build-from-source Formula/malt.rb
-
-# Reinstall after changes
 brew reinstall malt
-
-# Uninstall
-brew uninstall malt
-```
-
-### Common Development Tasks
-
-1. **Adding a new service**:
-   - Create template files in `share/templates/[service]/`
-   - Add service class in `lib/service_manager.rb` inheriting from `BaseService`
-   - Add generation logic in `lib/project.rb` (generate_config_files methods)
-   - Update default.json and README.md
-
-2. **Modifying configuration templates**:
-   - Edit ERB files in `share/templates/`
-   - Use `{{VARIABLE}}` for runtime substitution
-   - Test with `MALT_DEBUG=1` to see temp files and debug output
-
-3. **Debugging services**:
-   - Set `MALT_DEBUG=1` environment variable to:
-     - Keep temporary `.tmp` config files
-     - Show detailed variable substitution
-     - Display config file paths and existence checks
-   - Check service logs in `malt/logs/`
-   - Verify ports with `lsof -i :[port]` on macOS
-
-## Project Structure
-
-```
-homebrew-malt/
-├── bin/malt.rb              # CLI entry point
-├── lib/                     # Core Ruby modules
-│   ├── config.rb           # Config validation
-│   ├── project.rb          # Project setup
-│   ├── service_manager.rb  # Service management
-│   └── template.rb         # Template rendering
-├── Formula/                 # Homebrew formulas
-│   ├── malt.rb            # Main Malt formula
-│   └── phpcomplete.rb     # PHP environment formula
-├── share/                   # Shared resources
-│   ├── default.json        # Default config template
-│   ├── templates/          # Service config templates (ERB)
-│   └── public/             # Default dashboard files
-├── docs/                    # Documentation
-└── malt/                    # Example malt environment
-
-User project structure (after malt create):
-your-project/
-├── malt.json               # Environment definition
-├── malt/                   # Generated by malt create
-│   ├── conf/              # Service configurations
-│   ├── logs/              # Service logs
-│   ├── tmp/               # Temporary files
-│   └── var/               # Data files (MySQL, etc.)
-└── public/                # Document root (default)
 ```
 
 ## Malt Workflow
 
-1. **malt init** - Creates `malt.json` from default template
-2. **malt install** - Installs Homebrew packages and PHP extensions from malt.json
-3. **malt create** - Generates malt/ directory with all service configuration files
-4. **malt start** - Creates temporary configs with variable substitution and starts services
-5. **malt stop** - Stops services and cleans up temporary files
-6. **malt kill** - Force-kills all service processes (SIGKILL)
-7. **malt env** - Outputs shell script to set environment variables and aliases
-8. **malt info** - Shows project configuration and running services
+1. **malt init** - Creates `malt.json` from `share/default.json`
+2. **malt install** - Installs Homebrew packages and PHP extensions listed in `malt.json`
+3. **malt create** - Creates `malt/` directory, generates service configs from templates (phase 1 substitution)
+4. **malt start** - Expands runtime variables into `.tmp` configs and starts services (phase 2 substitution)
+5. **malt stop** - Stops services and removes `.tmp` files
+6. **malt kill** - Force-kills all recognized service processes (SIGKILL), ignores `malt.json`
+7. **malt status** - Shows running/stopped state per port
+8. **malt env** - Outputs shell script (`source <(malt env)`) to set `MALT_DIR`, `DOCUMENT_ROOT`, `PATH`, and CLI aliases for MySQL/Redis
 
-## Important Implementation Details
+## Adding a New Service
 
-- The Homebrew formula (Formula/malt.rb) replaces `MALT_IS_LOCAL = true` with `false` and substitutes path placeholders during installation
-- Service configurations support multiple ports (e.g., `php: [9000, 9001]` runs two PHP-FPM instances)
-- MySQL requires data directory initialization on first start (`--initialize-insecure`)
-- Nginx uses a main config file that includes port-specific configs
-- All services check if ports are in use before starting (using `lsof` on macOS or `netstat` on Linux)
-- The `document_root` defaults to `public/` and is used by web server configs
-
-## Testing
-
-- Test Malt locally with real project scenarios (PHP/MySQL/Redis apps)
-- Verify service startup/shutdown with `lsof -i :[port]`
-- Check generated config files in `malt/conf/` match expected values
-- Test with `MALT_DEBUG=1` to verify variable substitution
-- Verify clean installation via `brew install` from local tap
+1. Create template files in `share/templates/[service]/` using `{{VARIABLE}}` syntax
+2. Add service class in `lib/services/[service]_service.rb` inheriting from `BaseService`
+3. Add `require_relative` in `lib/service_manager.rb` and register in `register_services`
+4. Add generation logic in `lib/project.rb` (`generate_config_files` and its helpers)
+5. Add entry to `SERVICES` hash in `service_manager.rb` for kill/status support
+6. Update `share/default.json` and `docs/schema.json`
