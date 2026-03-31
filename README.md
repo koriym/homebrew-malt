@@ -76,7 +76,7 @@ malt install && malt start && source <(malt env)
 
 ## Project Structure
 
-```
+```text
 your-project/
 ├── malt.json        # Infrastructure definition (commit this)
 ├── malt/
@@ -89,7 +89,7 @@ your-project/
 
 Recommended `.gitignore`:
 
-```
+```text
 malt/logs/
 malt/tmp/
 malt/var/
@@ -102,11 +102,19 @@ PHP-FPM, Nginx, Apache HTTPD, MySQL, Redis, Memcached — each supporting multip
 
 Customize generated configs in `malt/conf/` directly. See the [Customization Guide](docs/customization_guide.md).
 
+## Claude Code Skill
+
+Malt is available as a [Claude Code](https://claude.ai/code) skill for setup, troubleshooting, and format conversion (Docker Compose, Kubernetes, Terraform, etc.).
+
+```text
+/plugin marketplace add koriym/homebrew-malt
+/plugin install malt@koriym-malt
+```
+
 ## Documentation
 
 - [Full documentation](https://koriym.github.io/homebrew-malt/index.html)
 - [llms.txt](docs/llms.txt) / [llms-full.txt](docs/llms-full.txt) — LLM-friendly references
-- [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html) — Generate infrastructure code from `malt.json`
 
 ## License
 

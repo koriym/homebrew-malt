@@ -1,6 +1,6 @@
 ---
 name: malt
-description: Malt development environment manager. Use when setting up, starting, stopping, troubleshooting, or customizing Homebrew-based dev environments with malt.json.
+description: Malt development environment manager. Use when setting up, starting, stopping, troubleshooting, customizing Homebrew-based dev environments with malt.json, or converting malt.json to other formats (Docker, Kubernetes, Terraform, Ansible, GitHub Actions, .env).
 ---
 
 # Malt - JSON-driven Homebrew Dev Services
@@ -316,15 +316,47 @@ malt/conf/*.tmp
 
 Use `malt.json` as Single Source of Truth to generate other formats.
 
-### Mapping Table
+### Supported Formats
 
-| malt.json | Docker Compose | GitHub Actions | .env |
-|-----------|----------------|----------------|------|
-| `php@8.4` | `php:8.4-fpm` | `shivammathur/setup-php` php-version: 8.4 | `PHP_VERSION=8.4` |
-| `mysql@8.0` | `mysql:8.0` | `services.mysql` image: mysql:8.0 | `MYSQL_PORT=3306` |
-| `redis` | `redis:latest` | `services.redis` | `REDIS_PORT=6379` |
-| `nginx` | `nginx:latest` | N/A | `NGINX_PORT=80` |
-| `memcached` | `memcached:latest` | `services.memcached` | `MEMCACHED_PORT=11211` |
+Dockerfile, Docker Compose, .env, GitHub Actions, Kubernetes, Terraform (AWS), Ansible.
+
+### Mapping Table: Docker / .env / GitHub Actions
+
+| malt.json | Docker image | .env | GitHub Actions |
+|-----------|-------------|------|----------------|
+| `php@8.4` | `php:8.4-fpm` | `PHP_VERSION=8.4` | `shivammathur/setup-php` php-version: 8.4 |
+| `mysql@8.0` | `mysql:8.0` | `MYSQL_PORT=3306` | `services.mysql` image: mysql:8.0 |
+| `redis` | `redis:latest` | `REDIS_PORT=6379` | `services.redis` |
+| `nginx` | `nginx:latest` | `NGINX_PORT=80` | N/A |
+| `memcached` | `memcached:latest` | `MEMCACHED_PORT=11211` | `services.memcached` |
+
+### Mapping Table: Kubernetes / Terraform / Ansible
+
+| malt.json | Kubernetes | Terraform (AWS) | Ansible |
+|-----------|------------|-----------------|---------|
+| `php@8.4` | Deployment + Service | ECS task definition | `php-fpm` package + systemd |
+| `mysql@8.0` | StatefulSet + PVC | RDS `mysql` 8.0 | `mysql-server` + systemd |
+| `redis` | Deployment + Service | ElastiCache Redis | `redis-server` + systemd |
+| `nginx` | Deployment + Ingress | ALB | `nginx` + systemd |
+| `memcached` | Deployment + Service | ElastiCache Memcached | `memcached` + systemd |
+| ports | Service `ports` | Security Group ingress | listen config |
+| php_extensions | custom image | ECS image build | `pecl install` tasks |
+
+### Dockerfile
+
+Generate a Dockerfile from `malt.json`. Typically one Dockerfile per service (used with Docker Compose):
+
+```dockerfile
+FROM php:8.4-fpm
+RUN docker-php-ext-install pdo_mysql \
+    && pecl install redis apcu xdebug \
+    && docker-php-ext-enable redis apcu xdebug
+COPY . /var/www/html
+WORKDIR /var/www/html
+EXPOSE 9000
+```
+
+Key rules: use official base images, match PHP version and extensions from `malt.json`. Generate separate Dockerfiles per service when used with Docker Compose.
 
 ### Docker Compose
 
@@ -404,3 +436,178 @@ jobs:
       - run: composer install
       - run: composer test
 ```
+
+### Kubernetes
+
+Generate Deployment + Service manifests per service in `malt.json`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-fpm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: php-fpm
+  template:
+    metadata:
+      labels:
+        app: php-fpm
+    spec:
+      containers:
+        - name: php-fpm
+          image: php:8.4-fpm
+          ports:
+            - containerPort: 9000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+```
+
+Key rules: MySQL/stateful services use StatefulSet + PVC. Stateless services (PHP-FPM, Nginx, Redis, Memcached) use Deployment. Add resource requests/limits. Use ConfigMap for custom configs.
+
+### Terraform
+
+Generate AWS infrastructure from `malt.json` (ECS Fargate + RDS):
+
+```hcl
+# main.tf
+resource "aws_ecs_task_definition" "app" {
+  family                   = "myapp"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+
+  container_definitions = jsonencode([
+    {
+      name  = "php-fpm"
+      image = "php:8.4-fpm"
+      portMappings = [{ containerPort = 9000 }]
+    },
+    {
+      name  = "nginx"
+      image = "nginx:latest"
+      portMappings = [{ containerPort = 80 }]
+    }
+  ])
+}
+
+resource "aws_db_instance" "mysql" {
+  engine         = "mysql"
+  engine_version = "8.0"
+  instance_class = "db.t3.micro"
+  port           = 3306
+}
+
+resource "aws_elasticache_cluster" "redis" {
+  engine         = "redis"
+  node_type      = "cache.t3.micro"
+  num_cache_nodes = 1
+  port           = 6379
+}
+```
+
+Key rules: MySQL → RDS, Redis/Memcached → ElastiCache, PHP+Nginx → ECS Fargate. Add VPC, subnets, security groups with port-based ingress matching `malt.json` ports. Organize as `main.tf`, `variables.tf`, `outputs.tf`.
+
+### Ansible
+
+Generate playbook to provision a Linux server from `malt.json`:
+
+```yaml
+---
+- name: Setup development environment
+  hosts: all
+  become: true
+  vars:
+    php_version: "8.4"
+    mysql_port: 3306
+    redis_port: 6379
+    nginx_port: 80
+
+  tasks:
+    - name: Install PHP and extensions
+      apt:
+        name:
+          - "php{{ php_version }}-fpm"
+          - "php{{ php_version }}-mysql"
+          - "php{{ php_version }}-redis"
+          - "php{{ php_version }}-apcu"
+        state: present
+      notify: restart php-fpm
+
+    - name: Install MySQL
+      apt:
+        name: mysql-server-8.0
+        state: present
+      notify: restart mysql
+
+    - name: Install Redis
+      apt:
+        name: redis-server
+        state: present
+      notify: restart redis
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+      notify: restart nginx
+
+  handlers:
+    - name: restart php-fpm
+      systemd:
+        name: "php{{ php_version }}-fpm"
+        state: restarted
+
+    - name: restart mysql
+      systemd:
+        name: mysql
+        state: restarted
+
+    - name: restart redis
+      systemd:
+        name: redis-server
+        state: restarted
+
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+```
+
+Key rules: Map each dependency to apt packages. Use handlers for service restarts. Extract ports and versions into `vars`. Add configuration templates for custom settings from `malt/conf/`.
