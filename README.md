@@ -76,7 +76,7 @@ malt install && malt start && source <(malt env)
 
 ## Project Structure
 
-```
+```text
 your-project/
 ├── malt.json        # Infrastructure definition (commit this)
 ├── malt/
@@ -89,7 +89,7 @@ your-project/
 
 Recommended `.gitignore`:
 
-```
+```text
 malt/logs/
 malt/tmp/
 malt/var/
@@ -106,8 +106,9 @@ Customize generated configs in `malt/conf/` directly. See the [Customization Gui
 
 Malt is available as a [Claude Code](https://claude.ai/code) skill for setup, troubleshooting, and format conversion (Docker Compose, Kubernetes, Terraform, etc.).
 
-```
-/install malt@koriym/homebrew-malt
+```text
+/plugin marketplace add koriym/homebrew-malt
+/plugin install malt@koriym-homebrew-malt
 ```
 
 ## Documentation
