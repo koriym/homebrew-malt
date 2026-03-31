@@ -108,7 +108,7 @@ Malt is available as a [Claude Code](https://claude.ai/code) skill for setup, tr
 
 ```text
 /plugin marketplace add koriym/homebrew-malt
-/plugin install malt@koriym-homebrew-malt
+/plugin install malt@koriym-malt
 ```
 
 ## Documentation

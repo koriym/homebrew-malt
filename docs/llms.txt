@@ -90,5 +90,5 @@ Fields:
 
 ## Optional
 
-- [README](https://github.com/koriym/homebrew-malt/blob/1.x/README.md): Motivation, FAQ, comparison with Docker and Devbox, HTTPS setup, language-specific guides
-- [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html): Generate Docker Compose, GitHub Actions, or .env from malt.json using AI prompts
+- [README](https://github.com/koriym/homebrew-malt/blob/1.x/README.md): Quick start, commands, project structure
+- [Claude Code Skill](https://github.com/koriym/homebrew-malt): Setup, troubleshooting, and format conversion (Docker Compose, Kubernetes, Terraform, Ansible, GitHub Actions, .env)
