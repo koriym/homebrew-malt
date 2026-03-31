@@ -102,11 +102,18 @@ PHP-FPM, Nginx, Apache HTTPD, MySQL, Redis, Memcached — each supporting multip
 
 Customize generated configs in `malt/conf/` directly. See the [Customization Guide](docs/customization_guide.md).
 
+## Claude Code Skill
+
+Malt is available as a [Claude Code](https://claude.ai/code) skill for setup, troubleshooting, and format conversion (Docker Compose, Kubernetes, Terraform, etc.).
+
+```
+/install malt@koriym/homebrew-malt
+```
+
 ## Documentation
 
 - [Full documentation](https://koriym.github.io/homebrew-malt/index.html)
 - [llms.txt](docs/llms.txt) / [llms-full.txt](docs/llms-full.txt) — LLM-friendly references
-- [Malt Prompt Brewery](https://koriym.github.io/homebrew-malt/prompt.html) — Generate infrastructure code from `malt.json`
 
 ## License
 
