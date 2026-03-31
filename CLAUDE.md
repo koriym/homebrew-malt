@@ -51,6 +51,21 @@ ruby bin/malt.rb stop
 ruby bin/malt.rb status
 ```
 
+### Running Tests
+
+```bash
+# Run all unit tests (minitest)
+rake test
+
+# Run a single test file
+ruby -Itest -Ilib test/template_test.rb
+
+# Run a single test method
+ruby -Itest -Ilib test/template_test.rb -n test_method_name
+```
+
+CI runs on macOS with Ruby 3.3: unit tests via `rake test` and an integration test that exercises init → create → start → stop with PHP-FPM.
+
 ### Debugging
 
 ```bash
