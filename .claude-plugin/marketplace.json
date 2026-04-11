@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "malt",
-      "source": ".",
+      "source": "./",
       "strict": true,
       "description": "Comprehensive Malt development environment management - setup PHP projects, troubleshoot services, customize configurations, and convert malt.json to Docker Compose, Dockerfile, Kubernetes, Terraform, Ansible, GitHub Actions, .env",
       "version": "1.0.0",
