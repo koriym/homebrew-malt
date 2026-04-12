@@ -114,7 +114,7 @@ Malt is available as a [Claude Code](https://claude.ai/code) skill for setup, tr
 ## Documentation
 
 - [Full documentation](https://koriym.github.io/homebrew-malt/index.html)
-- [llms.txt](docs/llms.txt) / [llms-full.txt](docs/llms-full.txt) — LLM-friendly references
+- [llms.txt](https://koriym.github.io/homebrew-malt/llms.txt) / [llms-full.txt](https://koriym.github.io/homebrew-malt/llms-full.txt) — LLM-friendly references
 
 ## License
 
