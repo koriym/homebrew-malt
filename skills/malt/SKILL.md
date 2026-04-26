@@ -89,13 +89,20 @@ malt start             # 4. Start all configured services
 source <(malt env)     # 5. Set up PATH, env vars, and aliases
 ```
 
+Step 3 (`malt create`) is required, not optional. `malt start` reads configs from `malt/` and fails with "Malt directory not found" if the directory does not exist. Before invoking `malt start`, verify `malt/` is present and run `malt create` first if it is missing.
+
 ## Joining Existing Project
 
-For projects with `malt.json` already committed:
+For projects with `malt.json` already committed, the `malt/` directory may or may not be present. `malt.json` is committed, but `malt/` is often regenerated per-checkout. Always check before starting:
 
 ```bash
-malt install && malt start && source <(malt env)
+malt install
+[ -d malt ] || malt create
+malt start
+source <(malt env)
 ```
+
+Precondition: `malt start` requires the `malt/` directory. If only `malt.json` is present, run `malt create` first; otherwise `malt start` will fail with "Malt directory not found".
 
 ## malt.json Schema
 
@@ -138,6 +145,18 @@ All fields are required. Schema: `docs/schema.json`
 | `php_extensions` | string[] | PHP extensions to install via `shivammathur/extensions` tap |
 
 ## Troubleshooting Guide
+
+### Detecting State: `malt.json` Exists but `malt/` Does Not
+
+Common on a fresh checkout: the project commits `malt.json` but `malt/` is gitignored or has never been generated. Running `malt start` in this state fails with "Malt directory not found".
+
+Correct response:
+
+```bash
+malt create && malt start
+```
+
+Not `malt start` alone. The skill should test for `malt/` (e.g. `[ -d malt ]`) before invoking `malt start` and run `malt create` when the directory is absent.
 
 ### Port Already in Use
 
