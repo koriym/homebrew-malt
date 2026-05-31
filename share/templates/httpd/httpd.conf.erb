@@ -1,4 +1,5 @@
 Listen {{PORT}}
+PidFile "{{MALT_DIR}}/var/httpd_{{PORT}}.pid"
 DocumentRoot "{{PROJECT_DIR}}/public"
 <Directory "{{PROJECT_DIR}}/public">
   Options Indexes FollowSymLinks

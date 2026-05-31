@@ -20,9 +20,18 @@ module Malt
     private
 
     def start_httpd(config, port)
+      FileUtils.mkdir_p(config.var_dir)
+      pid_file = httpd_pid_file(config, port)
+      if pid_running_from_file?(pid_file, expected_pattern: httpd_temp_config_path(config, port))
+        puts "[Running] Apache HTTPD on port #{port}"
+        return
+      elsif File.exist?(pid_file)
+        remove_stale_pid_file(pid_file)
+      end
+
       # Check if port is already in use
       if port_in_use?(port)
-        puts "[Running] Apache HTTPD on port #{port}"
+        puts "Error: Port #{port} is already in use by another process"
         return
       end
 
@@ -60,37 +69,29 @@ module Malt
     end
 
     def stop_httpd(config, port)
-      # First check if port is in use (service is running)
-      unless port_in_use?(port)
-        puts "[Stopped] Apache HTTPD is not running on port #{port}"
-
-        # Clean up temp file
-        httpd_conf_tmp = File.join(config.malt_dir, "conf", "httpd_#{port}.conf.tmp")
-        if !ENV["MALT_DEBUG"] && File.exist?(httpd_conf_tmp)
-          remove_temp_config(httpd_conf_tmp)
+      pid_file = httpd_pid_file(config, port)
+      unless File.exist?(pid_file)
+        if port_in_use?(port)
+          warn "Warning: Apache HTTPD appears to be running on port #{port}, but no Malt pid file was found. Leaving it untouched."
+        else
+          puts "[Stopped] Apache HTTPD is not running on port #{port}"
         end
+        cleanup_httpd_temp(config, port)
+        return false
+      end
 
-        return # Service is not running, exit here
+      pid = read_pid_file(pid_file)
+      unless pid && pid_running?(pid)
+        puts "[Stopped] Apache HTTPD is not running on port #{port}"
+        remove_stale_pid_file(pid_file)
+        cleanup_httpd_temp(config, port)
+        return false
       end
 
       puts "Stopping Apache HTTPD on port #{port}..."
 
-      # Paths for temp config file
-      httpd_conf_tmp = File.join(config.malt_dir, "conf", "httpd_#{port}.conf.tmp")
-      original_conf = File.join(config.conf_dir, "httpd_#{port}.conf")
-
-      # Create temp file if it doesn't exist (need variable-substituted file)
-      unless File.exist?(httpd_conf_tmp)
-        puts "Temporary config file not found, creating one for stop operation..." if ENV["MALT_DEBUG"]
-        temp_conf = create_temp_config(config, original_conf)
-        if temp_conf.nil?
-          puts "Warning: Could not create temporary config file for stopping Apache"
-          # Try alternative stop method
-          system("pkill", "-f", "httpd.*#{port}")
-          return
-        end
-        httpd_conf_tmp = temp_conf
-      end
+      httpd_conf_tmp = httpd_temp_config(config, port)
+      return stop_pid_file(pid_file, "Apache HTTPD on port #{port}", expected_pattern: httpd_temp_config_path(config, port)) if httpd_conf_tmp.nil?
 
       # Use apachectl to stop Apache (redirect output)
       apachectl = File.join(HOMEBREW_PREFIX, "bin", "apachectl")
@@ -98,28 +99,41 @@ module Malt
 
       # Execute stop command
       system(apachectl, "-f", httpd_conf_tmp, "-k", "stop", out: File::NULL, err: File::NULL)
+      wait_for_pid_stop(pid, timeout: 10)
 
-      if port_in_use?(port)
-        puts "Stopping Apache HTTPD on port #{port}..."
-
-        # Add short wait for stop to be processed
-        sleep 0.5
-
-        # Check if port was released
-        if port_in_use?(port)
-          puts "Warning: Apache might still be running, attempting fallback..."
-          system("pkill", "-f", "httpd.*#{port}", out: File::NULL, err: File::NULL)
-        else
-          puts "Apache HTTPD stopped successfully."
-        end
-      else
+      stopped = !pid_running?(pid)
+      if stopped
         puts "Apache HTTPD stopped."
+      else
+        warn "Warning: Apache HTTPD did not stop cleanly, falling back to pid termination..."
+        stopped = stop_pid_file(pid_file, "Apache HTTPD on port #{port}", expected_pattern: httpd_conf_tmp)
       end
 
-      # Clean up temp file
-      if !ENV["MALT_DEBUG"] && File.exist?(httpd_conf_tmp)
-        remove_temp_config(httpd_conf_tmp)
-      end
+      remove_stale_pid_file(pid_file) if stopped
+      cleanup_httpd_temp(config, port) if stopped || !File.exist?(pid_file)
+      stopped
+    end
+
+    def httpd_pid_file(config, port)
+      File.join(config.var_dir, "httpd_#{port}.pid")
+    end
+
+    def httpd_temp_config_path(config, port)
+      File.join(config.conf_dir, "httpd_#{port}.conf.tmp")
+    end
+
+    def httpd_temp_config(config, port)
+      httpd_conf_tmp = httpd_temp_config_path(config, port)
+      return httpd_conf_tmp if File.exist?(httpd_conf_tmp)
+
+      puts "Temporary config file not found, creating one for stop operation..." if ENV["MALT_DEBUG"]
+      create_temp_config(config, File.join(config.conf_dir, "httpd_#{port}.conf"))
+    end
+
+    def cleanup_httpd_temp(config, port)
+      return if ENV["MALT_DEBUG"]
+
+      remove_temp_config(httpd_temp_config_path(config, port))
     end
   end
 end

@@ -8,18 +8,15 @@ class Malt < Formula
 
   def install
     local_path = File.expand_path(File.dirname(__FILE__) + '/..')
-    puts("install_path: #{local_path}")
     ohai "Installing malt..."
 
     # Copy lib files
     (lib / "malt").mkpath
     cp_r Dir["#{local_path}/lib/*"], lib / "malt"
-    puts("lib copied: #{local_path}/lib/*")
 
     #Copy share files
     (share / "malt").mkpath
     cp_r Dir["#{local_path}/share/*"], share / "malt"
-    puts("share copied: #{local_path}/share/*")
 
     # Copy bin/malt and replace HOMEBREW_PREFIX, MALT_SHARE_PATH, MALT_LIB_PATH
     bin_file = bin / "malt"
@@ -36,10 +33,9 @@ class Malt < Formula
     else
       odie "Failed to write bin file: #{bin_file}"
     end
-    puts("bin copied: #{bin_file}")
 
     ohai "Full installation completed at #{prefix}"
-    end
+  end
 
   def post_install
     puts "\n"

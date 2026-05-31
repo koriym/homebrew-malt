@@ -22,9 +22,11 @@ module Malt
 
     def start_php_fpm(config, port)
       pid_file = File.join(config.var_dir, "php-fpm_#{port}.pid")
-      if pid_running_from_file?(pid_file)
+      if pid_running_from_file?(pid_file, expected_pattern: php_fpm_temp_conf(config, port))
         puts "[Running] PHP-FPM on port #{port}"
         return
+      elsif File.exist?(pid_file)
+        remove_stale_pid_file(pid_file)
       end
 
       # Check if port is already in use
@@ -66,10 +68,12 @@ module Malt
 
       # Start using temporary files
       php_fpm_bin = File.join(HOMEBREW_PREFIX, "opt", "php@#{config.php_version}", "sbin", "php-fpm")
+      pid = nil
       pid = Process.spawn(php_fpm_bin, "-y", temp_conf, "-c", temp_ini)
-      Process.detach(pid)
       File.write(pid_file, pid.to_s)
-    rescue SystemCallError => e
+      Process.detach(pid)
+    rescue SystemCallError, StandardError => e
+      terminate_pid(pid, "PHP-FPM on port #{port}") if pid
       puts "Error: Failed to start PHP-FPM on port #{port}: #{e.message}"
     end
 
@@ -85,15 +89,19 @@ module Malt
         return false
       end
 
-      stopped = stop_pid_file(pid_file, "PHP-FPM on port #{port}")
+      stopped = stop_pid_file(pid_file, "PHP-FPM on port #{port}", expected_pattern: php_fpm_temp_conf(config, port))
       cleanup_php_fpm_temp(config, port) if stopped || !File.exist?(pid_file)
       stopped
+    end
+
+    def php_fpm_temp_conf(config, port)
+      File.join(config.conf_dir, "php-fpm_#{port}.conf.tmp")
     end
 
     def cleanup_php_fpm_temp(config, port)
       return if ENV["MALT_DEBUG"]
 
-      remove_temp_config(File.join(config.conf_dir, "php-fpm_#{port}.conf.tmp"))
+      remove_temp_config(php_fpm_temp_conf(config, port))
     end
 
     def cleanup_php_ini(config)

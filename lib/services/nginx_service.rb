@@ -20,7 +20,7 @@ module Malt
       pid_file = nginx_pid_file(config)
       ports_str = config.ports["nginx"].join(", ")
 
-      if pid_running_from_file?(pid_file)
+      if pid_running_from_file?(pid_file, expected_pattern: nginx_temp_config(config))
         puts "[Running] Nginx on ports #{ports_str}"
         return
       elsif File.exist?(pid_file)
@@ -69,7 +69,7 @@ module Malt
     def stop_nginx_with_config(config, pid_file)
       temp_conf = File.join(config.conf_dir, "nginx_main.conf.tmp")
       temp_conf = create_nginx_temp_configs(config) unless File.exist?(temp_conf)
-      return stop_pid_file(pid_file, "Nginx") if temp_conf.nil?
+      return stop_pid_file(pid_file, "Nginx", expected_pattern: nginx_temp_config(config)) if temp_conf.nil?
 
       nginx_bin = File.join(HOMEBREW_PREFIX, "bin", "nginx")
       unless system(nginx_bin, "-c", temp_conf, "-s", "stop")
@@ -80,7 +80,7 @@ module Malt
 
       if pid && pid_running?(pid)
         warn "Warning: Nginx did not stop cleanly, falling back to pid termination..."
-        return stop_pid_file(pid_file, "Nginx")
+        return stop_pid_file(pid_file, "Nginx", expected_pattern: temp_conf)
       end
 
       remove_stale_pid_file(pid_file)
@@ -89,6 +89,10 @@ module Malt
 
     def nginx_pid_file(config)
       File.join(config.var_dir, "nginx.pid")
+    end
+
+    def nginx_temp_config(config)
+      File.join(config.conf_dir, "nginx_main.conf.tmp")
     end
 
     def create_nginx_temp_configs(config)
@@ -118,7 +122,7 @@ module Malt
     def cleanup_nginx_temp_files(config)
       return if ENV["MALT_DEBUG"]
 
-      remove_temp_config(File.join(config.conf_dir, "nginx_main.conf.tmp"))
+      remove_temp_config(nginx_temp_config(config))
       Dir.glob(File.join(config.conf_dir, "nginx_*.conf.tmp")).each do |tmp_file|
         remove_temp_config(tmp_file)
       end

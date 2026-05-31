@@ -93,18 +93,18 @@ module Malt
         php_extensions.each do |ext|
           ext_lower = ext.downcase
           candidates = ["#{ext_lower}@#{php_version}", "php#{ext_lower}@#{php_version}", "php-#{ext_lower}@#{php_version}"]
-          formula_name = candidates.find { |name| formulas.include?(name) } || candidates.first
-          formula_installed = formulas.include?(formula_name)
+          formula_name = candidates.find { |name| formulas.include?(name) }
 
-          if formula_installed
+          if formula_name
             puts " [Installed] #{ext}"
           else
             puts " [Installing] #{ext}"
-            if system("brew", "install", formula_name, "--quiet")
-              formulas << formula_name
+            installed_name = candidates.find { |candidate| system("brew", "install", candidate, "--quiet") }
+            if installed_name
+              formulas << installed_name
             else
-              puts "    Warning: Installation of #{formula_name} failed."
-              failures << formula_name
+              puts "    Warning: Installation of #{ext} failed. Tried: #{candidates.join(', ')}"
+              failures << ext
             end
           end
         end

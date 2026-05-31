@@ -15,6 +15,7 @@ module Malt
       config_path = find_config_in_current_dir(options)
       config = Malt::Config.new(config_path)
 
+      ensure_malt_dir_exists(config)
       start_services(config)
     end
 
@@ -47,6 +48,12 @@ module Malt
         return config_path if File.exist?(config_path)
 
         raise "malt.json not found in current directory. Run 'malt init' to create one."
+      end
+
+      def ensure_malt_dir_exists(config)
+        return if Dir.exist?(config.malt_dir)
+
+        raise "Malt directory '#{config.malt_dir}' not found. Run 'malt create' first to generate configuration files."
       end
 
       def start_services(config)

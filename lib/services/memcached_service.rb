@@ -22,9 +22,11 @@ module Malt
     def start_memcached(config, port)
       FileUtils.mkdir_p(config.var_dir)
       pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
-      if pid_running_from_file?(pid_file)
+      if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
         puts "[Running] Memcached on port #{port}"
         return
+      elsif File.exist?(pid_file)
+        remove_stale_pid_file(pid_file)
       end
 
       # Check if port is already in use
@@ -35,7 +37,17 @@ module Malt
 
       puts "Starting Memcached on port #{port}..."
 
-      system("memcached", "-d", "-m", "64", "-p", port.to_s, "-u", "memcached", "-c", "1024", "-P", pid_file, "-l", "127.0.0.1")
+      started = system("memcached", "-d", "-m", "64", "-p", port.to_s, "-u", "memcached", "-c", "1024", "-P", pid_file, "-l", "127.0.0.1")
+      20.times do
+        break if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+
+        sleep 0.1
+      end
+
+      return if started && pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+
+      warn "Error: Failed to start Memcached on port #{port}"
+      remove_stale_pid_file(pid_file)
     end
 
     def stop_memcached(config, port)
@@ -49,7 +61,11 @@ module Malt
         return false
       end
 
-      stop_pid_file(pid_file, "Memcached on port #{port}")
+      stop_pid_file(pid_file, "Memcached on port #{port}", expected_pattern: memcached_identity_pattern)
+    end
+
+    def memcached_identity_pattern
+      "memcached"
     end
   end
 end

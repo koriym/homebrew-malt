@@ -135,4 +135,14 @@ class BaseServiceTest < Minitest::Test
 
     assert_nil result
   end
+
+  def test_read_pid_file_rejects_zero_and_negative_pids
+    pid_file = File.join(@temp_dir, "service.pid")
+
+    File.write(pid_file, "0")
+    assert_nil @service.read_pid_file(pid_file)
+
+    File.write(pid_file, "-123")
+    assert_nil @service.read_pid_file(pid_file)
+  end
 end

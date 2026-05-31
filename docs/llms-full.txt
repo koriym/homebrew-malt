@@ -174,19 +174,20 @@ Configuration files in `malt/conf/` use `{{VARIABLE}}` placeholders expanded whe
 - Config: `httpd_{port}.conf` (per port)
 - Separate httpd instance per port
 - Loads libphp.so module from `{HOMEBREW_PREFIX}/opt/php@{version}/lib/httpd/modules/`
-- Graceful shutdown via `apachectl -k stop`
+- Project pid file: `malt/var/httpd_{port}.pid`; stop uses the project config and falls back to that exact pid
 
 ### MySQL
 - Config: `my_{port}.cnf`
 - Auto-initializes data directory on first start (`mysqld --initialize-insecure`)
 - Socket files in `malt/tmp/`
 - Separate data directories per instance: `malt/var/mysql_{index}`
-- Note: MySQL version is hardcoded to `8.0` in the service implementation
+- Project pid file: `malt/var/mysql_{index}/mysqld.pid`; stop uses the project defaults file/socket before pid fallback
+- MySQL version is read from `mysql@X.Y` dependencies and defaults to `8.0`
 
 ### Redis
 - Config: `redis_{port}.conf`
 - RDB dumps in `malt/tmp/`
-- Shutdown via `redis-cli -p {port} shutdown`
+- Project pid file: `malt/var/redis_{port}.pid`; stop only targets that pid
 
 ### Memcached
 - Memcached is started from Malt's Ruby service options; no generated memcached config file is required.
@@ -363,8 +364,7 @@ share/
 │   ├── nginx/nginx_main.conf.erb
 │   ├── httpd/httpd.conf.erb
 │   ├── mysql/my.cnf.erb
-│   ├── redis/redis.conf.erb
-│   └── memcached/memcached.conf.erb
+│   └── redis/redis.conf.erb
 └── public/                    # Default dashboard files copied to public/ on malt create
 ```
 

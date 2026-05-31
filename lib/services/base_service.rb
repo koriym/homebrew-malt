@@ -27,9 +27,9 @@ module Malt
       end
     end
 
-    def pid_running_from_file?(pid_file)
+    def pid_running_from_file?(pid_file, expected_pattern: nil)
       pid = read_pid_file(pid_file)
-      pid && pid_running?(pid)
+      pid && pid_running?(pid) && pid_matches?(pid, expected_pattern)
     end
 
     def read_pid_file(pid_file)
@@ -38,7 +38,10 @@ module Malt
       pid = File.read(pid_file).strip
       return nil if pid.empty?
 
-      Integer(pid)
+      pid = Integer(pid)
+      return nil unless pid.positive?
+
+      pid
     rescue ArgumentError
       nil
     end
@@ -52,7 +55,7 @@ module Malt
       true
     end
 
-    def stop_pid_file(pid_file, label, timeout: 10)
+    def stop_pid_file(pid_file, label, timeout: 10, expected_pattern: nil)
       pid = read_pid_file(pid_file)
       unless pid
         puts "[Stopped] #{label} is not running"
@@ -62,6 +65,12 @@ module Malt
 
       unless pid_running?(pid)
         puts "[Stopped] #{label} is not running"
+        remove_stale_pid_file(pid_file)
+        return false
+      end
+
+      unless pid_matches?(pid, expected_pattern)
+        warn "Warning: #{label} pid #{pid} does not match the expected process. Leaving it untouched."
         remove_stale_pid_file(pid_file)
         return false
       end
@@ -89,6 +98,35 @@ module Malt
     rescue Errno::EPERM => e
       warn "Warning: Failed to stop #{label}: #{e.message}"
       false
+    end
+
+    def pid_matches?(pid, expected_pattern)
+      return true if expected_pattern.nil?
+
+      command = process_command(pid)
+      return false if command.nil? || command.empty?
+
+      Array(expected_pattern).all? do |pattern|
+        pattern.is_a?(Regexp) ? command.match?(pattern) : command.include?(pattern.to_s)
+      end
+    end
+
+    def process_command(pid)
+      IO.popen(["ps", "-p", pid.to_s, "-o", "command="], &:read).to_s.strip
+    rescue SystemCallError
+      nil
+    end
+
+    def terminate_pid(pid, label, timeout: 1)
+      return unless pid && pid_running?(pid)
+
+      Process.kill("TERM", pid)
+      wait_for_pid_stop(pid, timeout: timeout)
+      Process.kill("KILL", pid) if pid_running?(pid)
+    rescue Errno::ESRCH
+      nil
+    rescue Errno::EPERM => e
+      warn "Warning: Failed to terminate #{label}: #{e.message}"
     end
 
     # Create temporary config file with extra variable substitutions
