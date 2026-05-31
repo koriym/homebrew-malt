@@ -314,7 +314,6 @@ your-project/
 │   │   ├── httpd_8080.conf
 │   │   ├── my_3306.cnf
 │   │   ├── redis_6379.conf
-│   │   ├── memcached_11211.conf
 │   │   └── *.tmp           # Temporary files (gitignore)
 │   ├── logs/               # Service log files (gitignore)
 │   ├── tmp/                # Temporary/socket files (gitignore)

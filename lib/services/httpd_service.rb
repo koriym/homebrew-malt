@@ -46,10 +46,14 @@ module Malt
       end
 
       # Start with temporary config
-      cmd = "#{HOMEBREW_PREFIX}/bin/httpd -f #{temp_conf}"
-      puts "Running command: #{cmd}"
-      unless system("#{cmd} &")
+      httpd = File.join(HOMEBREW_PREFIX, "bin", "httpd")
+      puts "Running command: #{httpd} -f #{temp_conf}"
+      begin
+        pid = Process.spawn(httpd, "-f", temp_conf)
+        Process.detach(pid)
+      rescue SystemCallError => e
         puts "Error: Failed to start Apache HTTPD on port #{port}"
+        puts e.message if ENV["MALT_DEBUG"]
         return
       end
       puts "Apache HTTPD starting in background..."
@@ -82,18 +86,18 @@ module Malt
         if temp_conf.nil?
           puts "Warning: Could not create temporary config file for stopping Apache"
           # Try alternative stop method
-          system("pkill -f 'httpd.*#{port}'")
+          system("pkill", "-f", "httpd.*#{port}")
           return
         end
         httpd_conf_tmp = temp_conf
       end
 
       # Use apachectl to stop Apache (redirect output)
-      cmd = "#{HOMEBREW_PREFIX}/bin/apachectl -f #{httpd_conf_tmp} -k stop > /dev/null 2>&1 &"
-      puts "Running command: #{cmd}" if ENV["MALT_DEBUG"]
+      apachectl = File.join(HOMEBREW_PREFIX, "bin", "apachectl")
+      puts "Running command: #{apachectl} -f #{httpd_conf_tmp} -k stop" if ENV["MALT_DEBUG"]
 
       # Execute stop command
-      system(cmd)
+      system(apachectl, "-f", httpd_conf_tmp, "-k", "stop", out: File::NULL, err: File::NULL)
 
       if port_in_use?(port)
         puts "Stopping Apache HTTPD on port #{port}..."
@@ -104,7 +108,7 @@ module Malt
         # Check if port was released
         if port_in_use?(port)
           puts "Warning: Apache might still be running, attempting fallback..."
-          system("pkill -f 'httpd.*#{port}' > /dev/null 2>&1")
+          system("pkill", "-f", "httpd.*#{port}", out: File::NULL, err: File::NULL)
         else
           puts "Apache HTTPD stopped successfully."
         end

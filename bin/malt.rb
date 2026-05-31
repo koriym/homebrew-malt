@@ -22,6 +22,7 @@ end
 require 'optparse'
 require 'json'
 require 'fileutils'
+require 'shellwords'
 require 'config'
 require 'project'
 require 'template'

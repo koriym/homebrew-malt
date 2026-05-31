@@ -63,8 +63,8 @@ module Malt
       # Initialize MySQL if needed
       if !File.exist?(File.join(data_dir, "mysql")) || Dir.glob(File.join(data_dir, "*")).empty?
         puts "Initializing MySQL data directory at #{data_dir}..."
-        init_cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld --initialize-insecure --datadir=#{data_dir}"
-        unless system(init_cmd)
+        mysqld = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqld")
+        unless system(mysqld, "--initialize-insecure", "--datadir=#{data_dir}")
           puts "Error: MySQL initialization failed"
           return
         end
@@ -78,9 +78,12 @@ module Malt
       end
 
       # Start MySQL in background
-      cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqld_safe --defaults-file=#{temp_conf} > #{log_file} 2>&1 &"
-      system(cmd)
+      mysqld_safe = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqld_safe")
+      pid = Process.spawn(mysqld_safe, "--defaults-file=#{temp_conf}", out: [log_file, "a"], err: [:child, :out])
+      Process.detach(pid)
       puts "MySQL starting in background..."
+    rescue SystemCallError => e
+      puts "Error: Failed to start MySQL on port #{port}: #{e.message}"
     end
 
     def stop_mysql(config, port)
@@ -96,8 +99,8 @@ module Malt
 
         # Redirect output to log file
         log_file = File.join(config.logs_dir, "mysql_#{port}_error.log")
-        cmd = "#{HOMEBREW_PREFIX}/opt/mysql@8.0/bin/mysqladmin --defaults-file=#{config_file} -uroot -h 127.0.0.1 --port #{port} shutdown > #{log_file} 2>&1"
-        system(cmd)
+        mysqladmin = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqladmin")
+        system(mysqladmin, "--defaults-file=#{config_file}", "-uroot", "-h", "127.0.0.1", "--port", port.to_s, "shutdown", out: [log_file, "a"], err: [:child, :out])
 
         # Remove temp file unless in debug mode
         remove_temp_config(temp_conf) unless ENV["MALT_DEBUG"]

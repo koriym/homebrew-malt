@@ -2,14 +2,14 @@
 
 **One JSON. Native speed. Zero containers.**
 
-Define your dev services in `malt.json`, run `malt start`, and get PHP, MySQL, Nginx, Redis — all running natively via Homebrew with project-isolated ports. No Docker overhead, no VM, no volume mount lag.
+Define your dev services in `malt.json`, run the Malt workflow, and get PHP, MySQL, Nginx, Redis — all running natively via Homebrew with project-isolated ports. No Docker overhead, no VM, no volume mount lag.
 
 ```bash
 malt init      # Generate malt.json
 malt install   # brew install everything
 malt create    # Generate service configs
 malt start     # Start all services
-malt stop      # Stop all services
+malt stop      # Stop this project's services
 ```
 
 ## Installation
@@ -55,7 +55,10 @@ malt start     # Start services
 ### Joining an existing project
 
 ```bash
-malt install && malt start && source <(malt env)
+malt install
+[ -d malt ] || malt create
+malt start
+source <(malt env)
 ```
 
 `source <(malt env)` sets up `PATH`, `MALT_DIR`, `DOCUMENT_ROOT`, and port-specific aliases like `mysql@3306`, `redis-cli@6379`.
@@ -67,9 +70,9 @@ malt install && malt start && source <(malt env)
 | `malt init` | Create `malt.json` from template |
 | `malt install` | Install dependencies from `malt.json` |
 | `malt create` | Generate service configs in `malt/conf/` |
-| `malt start` | Start all services |
-| `malt stop` | Stop all services |
-| `malt kill` | Force-kill all service processes |
+| `malt start` | Start configured services |
+| `malt stop` | Stop configured services for the current project |
+| `malt kill` | Force-kill all supported service processes, regardless of project |
 | `malt status` | Show running/stopped state per port |
 | `malt env` | Output shell env setup script |
 | `malt info` | Show project information |

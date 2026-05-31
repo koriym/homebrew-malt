@@ -13,7 +13,7 @@ module Malt
 
     def stop(config)
       config.ports["redis"].each do |port|
-        stop_redis(port)
+        stop_redis(config, port)
       end
     end
 
@@ -52,12 +52,14 @@ module Malt
       end
 
       # Start Redis with temporary config
-      cmd = "redis-server #{temp_conf}"
-      puts "Running command: #{cmd}"
-      system("#{cmd} &")
+      puts "Running command: redis-server #{temp_conf}"
+      pid = Process.spawn("redis-server", temp_conf)
+      Process.detach(pid)
+    rescue SystemCallError => e
+      puts "Error: Failed to start Redis on port #{port}: #{e.message}"
     end
 
-    def stop_redis(port)
+    def stop_redis(config, port)
       port = Integer(port) # Validate port is numeric
 
       # Check if Redis is running on the specific port
@@ -65,10 +67,11 @@ module Malt
         puts "Stopping Redis on port #{port}..."
 
         # Find the temporary config file
-        redis_conf_tmp = File.join(Dir.pwd, "malt", "conf", "redis_#{port}.conf.tmp")
+        redis_conf_tmp = File.join(config.conf_dir, "redis_#{port}.conf.tmp")
 
         # Stop the Redis server on the specific port
-        stop_success = system("#{HOMEBREW_PREFIX}/bin/redis-cli -p #{port} shutdown")
+        redis_cli = File.join(HOMEBREW_PREFIX, "bin", "redis-cli")
+        stop_success = system(redis_cli, "-p", port.to_s, "shutdown")
 
         # Clean up temporary file if Redis was stopped successfully
         if stop_success && !ENV["MALT_DEBUG"] && File.exist?(redis_conf_tmp)

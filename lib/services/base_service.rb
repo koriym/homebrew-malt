@@ -27,6 +27,70 @@ module Malt
       end
     end
 
+    def pid_running_from_file?(pid_file)
+      pid = read_pid_file(pid_file)
+      pid && pid_running?(pid)
+    end
+
+    def read_pid_file(pid_file)
+      return nil unless File.exist?(pid_file)
+
+      pid = File.read(pid_file).strip
+      return nil if pid.empty?
+
+      Integer(pid)
+    rescue ArgumentError
+      nil
+    end
+
+    def pid_running?(pid)
+      Process.kill(0, pid)
+      true
+    rescue Errno::ESRCH
+      false
+    rescue Errno::EPERM
+      true
+    end
+
+    def stop_pid_file(pid_file, label, timeout: 10)
+      pid = read_pid_file(pid_file)
+      unless pid
+        puts "[Stopped] #{label} is not running"
+        remove_stale_pid_file(pid_file)
+        return false
+      end
+
+      unless pid_running?(pid)
+        puts "[Stopped] #{label} is not running"
+        remove_stale_pid_file(pid_file)
+        return false
+      end
+
+      puts "Stopping #{label}..."
+      Process.kill("TERM", pid)
+      wait_for_pid_stop(pid, timeout: timeout)
+
+      if pid_running?(pid)
+        warn "Warning: #{label} still running after SIGTERM, sending SIGKILL..."
+        Process.kill("KILL", pid)
+        wait_for_pid_stop(pid, timeout: 1)
+      end
+
+      if pid_running?(pid)
+        warn "Warning: Failed to stop #{label}"
+        return false
+      end
+
+      remove_stale_pid_file(pid_file)
+      true
+    rescue Errno::ESRCH
+      remove_stale_pid_file(pid_file)
+      false
+    rescue Errno::EPERM => e
+      warn "Warning: Failed to stop #{label}: #{e.message}"
+      false
+    end
+
     # Create temporary config file with extra variable substitutions
     def create_temp_config_with_extras(config, config_path, extra_vars = {})
       unless File.exist?(config_path)
@@ -145,9 +209,21 @@ module Malt
       sleep 1
     end
 
+    def wait_for_pid_stop(pid, timeout: 10)
+      (timeout * 10).times do
+        return unless pid_running?(pid)
+
+        sleep 0.1
+      end
+    end
+
     # Remove temporary config file
     def remove_temp_config(temp_path)
       FileUtils.rm(temp_path) if File.exist?(temp_path)
+    end
+
+    def remove_stale_pid_file(pid_file)
+      FileUtils.rm_f(pid_file) unless ENV["MALT_DEBUG"]
     end
 
     # Remove all temporary files matching a pattern
