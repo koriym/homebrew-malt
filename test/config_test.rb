@@ -79,6 +79,28 @@ class ConfigTest < Minitest::Test
     assert_equal "8.4", config.php_version
   end
 
+  def test_mysql_version_extracts_from_dependencies
+    write_config({
+      "dependencies" => ["php@8.4", "mysql@8.1"],
+      "ports" => {}
+    })
+
+    config = Malt::Config.new(@config_path)
+
+    assert_equal "8.1", config.mysql_version
+  end
+
+  def test_mysql_version_defaults_to_8_0
+    write_config({
+      "dependencies" => ["php@8.4"],
+      "ports" => {}
+    })
+
+    config = Malt::Config.new(@config_path)
+
+    assert_equal "8.0", config.mysql_version
+  end
+
   def test_has_service_returns_true_for_configured_service
     write_config({
       "ports" => { "php" => [9000], "redis" => [6379] }

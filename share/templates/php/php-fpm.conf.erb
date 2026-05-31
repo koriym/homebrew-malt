@@ -1,5 +1,6 @@
 [global]
 daemonize = no
+pid = "{{MALT_DIR}}/var/php-fpm_{{PORT}}.pid"
 error_log = "{{MALT_DIR}}/logs/php-fpm_{{PORT}}.log"
 
 [www]
@@ -11,3 +12,4 @@ pm.min_spare_servers = 3
 pm.max_spare_servers = 7
 access.log = "{{MALT_DIR}}/logs/php-fpm-access_{{PORT}}.log"
 slowlog = "{{MALT_DIR}}/logs/php-fpm-slow_{{PORT}}.log"
+request_slowlog_timeout = 5s

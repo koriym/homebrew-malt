@@ -1,3 +1,5 @@
+require "shellwords"
+
 module Malt
   class Project
     def self.templates_dir
@@ -53,62 +55,66 @@ module Malt
     def self.install_deps(options)
       config_path = options[:config]
       unless File.exist?(config_path)
-        puts "Config file not found: #{config_path}"
-        puts "Run 'malt init' to create a config file"
-        return
+        raise "Config file not found: #{config_path}. Run 'malt init' to create a config file"
       end
 
       puts "Installing dependencies from: #{config_path}"
-      begin
-        json_data = JSON.parse(File.read(config_path))
+      json_data = JSON.parse(File.read(config_path))
+      dependencies = Array(json_data["dependencies"])
+      php_extensions = Array(json_data["php_extensions"])
+      failures = []
 
-        if json_data["dependencies"] && !json_data["dependencies"].empty?
-          puts "Checking dependencies:"
-          installed_formulas = `brew list --formula`.split("\n")
-          deps_to_install = json_data["dependencies"].reject do |dep|
-            is_installed = installed_formulas.include?(dep)
-            puts "[Installed] #{dep}" if is_installed
-            is_installed
-          end
-
-          deps_to_install.each do |dep|
-            puts "[Installing] #{dep}"
-            system "brew", "install", dep, "--quiet"
-            puts "    Warning: Installation of #{dep} failed" unless $?.success?
-          end
-        else
-          puts "No dependencies specified in config"
+      if dependencies.empty?
+        puts "No dependencies specified in config"
+      else
+        puts "Checking dependencies:"
+        installed_formulas = brew_installed_formulas
+        deps_to_install = dependencies.reject do |dep|
+          is_installed = installed_formulas.include?(dep)
+          puts "[Installed] #{dep}" if is_installed
+          is_installed
         end
 
-        if json_data["php_extensions"] && !json_data["php_extensions"].empty?
-          puts "PHP extensions:"
-          php_dep = json_data["dependencies"].find { |dep| dep.start_with?("php@") }
-          php_version = php_dep ? php_dep.split('@')[1] : "8.4"
-          installed_formulas = `brew list --formula`.split("\n")
+        deps_to_install.each do |dep|
+          puts "[Installing] #{dep}"
+          next if system("brew", "install", dep, "--quiet")
 
-          json_data["php_extensions"].each do |ext|
-            ext_lower = ext.downcase
-            candidates = ["#{ext_lower}@#{php_version}", "php#{ext_lower}@#{php_version}", "php-#{ext_lower}@#{php_version}"]
-            formula_name = candidates.find { |name| installed_formulas.include?(name) } || candidates.first
-            formula_installed = installed_formulas.include?(formula_name)
+          puts "    Warning: Installation of #{dep} failed"
+          failures << dep
+        end
+      end
 
-            if formula_installed
-              puts " [Installed] #{ext}"
+      unless php_extensions.empty?
+        puts "PHP extensions:"
+        php_dep = dependencies.find { |dep| dep.start_with?("php@") }
+        php_version = php_dep ? php_dep.split('@')[1] : "8.4"
+        formulas = brew_installed_formulas
+
+        php_extensions.each do |ext|
+          ext_lower = ext.downcase
+          candidates = ["#{ext_lower}@#{php_version}", "php#{ext_lower}@#{php_version}", "php-#{ext_lower}@#{php_version}"]
+          formula_name = candidates.find { |name| formulas.include?(name) }
+
+          if formula_name
+            puts " [Installed] #{ext}"
+          else
+            puts " [Installing] #{ext}"
+            installed_name = candidates.find { |candidate| system("brew", "install", candidate, "--quiet") }
+            if installed_name
+              formulas << installed_name
             else
-              puts " [Installing] #{ext}"
-              system "brew", "install", formula_name, "--quiet"
-              puts "    Warning: Installation of #{formula_name} failed." unless $?.success?
+              puts "    Warning: Installation of #{ext} failed. Tried: #{candidates.join(', ')}"
+              failures << ext
             end
           end
-          puts "Note: Run 'php -m' to verify that extensions are properly loaded in PHP"
-          puts "All dependencies have been installed."
-          puts "Run 'malt create' to generate configuration files."
         end
-      rescue JSON::ParserError => e
-        puts "Invalid JSON in #{config_path}: #{e.message}"
-      rescue => e
-        puts "Error installing dependencies: #{e.message}"
       end
+
+      raise "Failed to install: #{failures.join(', ')}" unless failures.empty?
+
+      puts "Note: Run 'php -m' to verify that extensions are properly loaded in PHP" unless php_extensions.empty?
+      puts "All dependencies have been installed."
+      puts "Run 'malt create' to generate configuration files."
     end
 
     def self.create(options)
@@ -159,36 +165,31 @@ module Malt
       config.validate!
 
       malt_dir = config.malt_dir
-      project_dir = config.project_dir
       document_root = config.document_root
-      project_name = config.project_name
 
-      php_dep = config.dependencies.find { |dep| dep.start_with?("php@") }
-      php_version = php_dep ? php_dep.split('@')[1] : "8.4"
-      mysql_dep = config.dependencies.find { |dep| dep.start_with?("mysql@") }
-      mysql_version = mysql_dep ? mysql_dep.split('@')[1] : "8.0"
+      php_version = config.php_version
+      mysql_version = config.mysql_version
 
       aliases = []
       if config.has_service?("mysql")
         config.ports["mysql"].each do |port|
-          aliases << "alias mysql@#{port}=\"mysql --defaults-file=#{malt_dir}/conf/my_#{port}.cnf -h 127.0.0.1\""
-        end
-      end
-      if config.has_service?("postgresql")
-        config.ports["postgresql"].each do |port|
-          aliases << "alias psql@#{port}=\"psql -p #{port}\""
+          mysql_defaults_file = File.join(malt_dir, "conf", "my_#{port}.cnf")
+          aliases << shell_alias("mysql@#{port}", ["mysql", "--defaults-file=#{mysql_defaults_file}", "-h", "127.0.0.1"])
         end
       end
       if config.has_service?("redis")
         config.ports["redis"].each do |port|
-          aliases << "alias redis-cli@#{port}=\"redis-cli -p #{port}\""
+          aliases << shell_alias("redis-cli@#{port}", ["redis-cli", "-p", port.to_s])
         end
       end
 
+      php_bin = File.join(HOMEBREW_PREFIX, "opt", "php@#{php_version}", "bin")
+      mysql_bin = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{mysql_version}", "bin")
+
       <<~SCRIPT
-        export MALT_DIR="#{malt_dir}"
-        export DOCUMENT_ROOT="#{document_root}"
-        export PATH="#{HOMEBREW_PREFIX}/opt/php@#{php_version}/bin:#{HOMEBREW_PREFIX}/opt/mysql@#{mysql_version}/bin:$PATH"
+        export MALT_DIR=#{Shellwords.escape(malt_dir)}
+        export DOCUMENT_ROOT=#{Shellwords.escape(document_root)}
+        export PATH=#{Shellwords.escape(php_bin)}:#{Shellwords.escape(mysql_bin)}:$PATH
         
         #{aliases.join("\n")}
       SCRIPT
@@ -207,7 +208,6 @@ module Malt
       puts "  Apache: #{config.ports["httpd"].join(', ')}" if config.ports["httpd"]
       puts "  Redis: #{config.ports["redis"].join(', ')}" if config.ports["redis"]
       puts "  MySQL: #{config.ports["mysql"].join(', ')}" if config.ports["mysql"]
-      puts "  PostgreSQL: #{config.ports["postgresql"].join(', ')}" if config.ports["postgresql"]
     end
 
     private
@@ -290,13 +290,6 @@ module Malt
         end
       end
 
-      if config.has_service?("postgresql")
-        postgresql_template = Malt::Template.new(File.join(templates_dir, "postgresql", "postgresql.conf.erb"))
-        config.ports["postgresql"].each do |port|
-          content = postgresql_template.render({ PORT: port, MALT_DIR: "{{MALT_DIR}}" })
-          File.write(File.join(config.malt_dir, "conf", "postgresql_#{port}.conf"), content)
-        end
-      end
     end
 
     def self.generate_cache_configs(config)
@@ -308,13 +301,6 @@ module Malt
         end
       end
 
-      if config.ports["memcached"]
-        memcached_template = Malt::Template.new(File.join(templates_dir, "memcached", "memcached.conf.erb"))
-        config.ports["memcached"].each do |port|
-          content = memcached_template.render({ PORT: port, MALT_DIR: "{{MALT_DIR}}" })
-          File.write(File.join(config.malt_dir, "conf", "memcached_#{port}.conf"), content)
-        end
-      end
     end
 
     def self.resolve_extension_path(ext, php_version)
@@ -330,6 +316,18 @@ module Malt
         puts "  Warning: Could not find #{ext}.so in Homebrew opt paths, using bare name"
         "#{ext}.so"
       end
+    end
+
+    def self.brew_installed_formulas
+      `brew list --formula`.split("\n")
+    end
+
+    def self.shell_alias(name, command_parts)
+      "alias #{name}=#{shell_single_quote(command_parts.shelljoin)}"
+    end
+
+    def self.shell_single_quote(value)
+      "'#{value.gsub("'", "'\"'\"'")}'"
     end
   end
 end

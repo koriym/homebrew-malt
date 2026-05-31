@@ -31,6 +31,15 @@ module Malt
       end
     end
 
+    def mysql_version
+      mysql_dep = @dependencies.find { |dep| dep.start_with?("mysql@") }
+      if mysql_dep
+        mysql_dep.split('@')[1]
+      else
+        "8.0" # Default value
+      end
+    end
+
     def has_service?(service_name)
       @ports.key?(service_name) && !@ports[service_name].empty?
     end

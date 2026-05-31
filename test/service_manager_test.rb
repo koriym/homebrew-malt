@@ -142,4 +142,15 @@ class ServiceManagerTest < Minitest::Test
       Malt::ServiceManager.send(:find_config_in_current_dir, {})
     end
   end
+
+  def test_start_raises_when_config_project_malt_dir_is_missing
+    FileUtils.rm_rf(File.join(@temp_dir, "malt"))
+
+    error = assert_raises RuntimeError do
+      Malt::ServiceManager.start(config: File.join(@temp_dir, "malt.json"))
+    end
+
+    assert_includes error.message, File.join(@temp_dir, "malt")
+    assert_includes error.message, "malt create"
+  end
 end
