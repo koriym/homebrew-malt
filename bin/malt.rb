@@ -11,10 +11,12 @@ if MALT_IS_LOCAL
   MALT_SHARE_PATH = "#{repo_root}/share"
   MALT_CONFIG_PATH = "#{repo_root}/share/default.json"
   MALT_TEMPLATES_PATH = "#{repo_root}/share/templates"
+  MALT_VERSION = File.read(File.join(repo_root, "Formula", "malt.rb"))[/version "([^"]+)"/, 1] || "unknown"
 else
   MALT_SHARE_PATH = "{{MALT_SHARE_PATH}}"
   MALT_CONFIG_PATH = "{{MALT_CONFIG_PATH}}"
   MALT_TEMPLATES_PATH = "{{MALT_TEMPLATES_PATH}}"
+  MALT_VERSION = "{{MALT_VERSION}}"
   $LOAD_PATH.unshift("{{MALT_LIB_PATH}}")
 end
 
@@ -35,12 +37,9 @@ options = {
   debug: false
 }
 
-# Parse subcommand and options
-command = ARGV.shift
-
 # Help message
 def show_help
-  puts "Malt - JSON-driven development environment manager"
+  puts "Malt #{MALT_VERSION} - JSON-driven development environment manager"
   puts ""
   puts "Usage: malt COMMAND [OPTIONS]"
   puts ""
@@ -62,6 +61,14 @@ def show_help
   puts "  --debug, -d            Debug mode"
   puts "  --help, -h             Show this help message"
 end
+
+if ARGV.first == "--help" || ARGV.first == "-h"
+  show_help
+  exit
+end
+
+# Parse subcommand and options
+command = ARGV.shift
 
 # Parse options
 OptionParser.new do |opts|

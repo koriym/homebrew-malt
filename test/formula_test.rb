@@ -12,6 +12,7 @@ class FormulaTest < Minitest::Test
     assert_includes @formula, 'bin_content.gsub!(/{{MALT_SHARE_PATH}}/, (share / "malt").to_s)'
     assert_includes @formula, 'bin_content.gsub!(/{{MALT_CONFIG_PATH}}/, (share / "malt" / "default.json").to_s)'
     assert_includes @formula, 'bin_content.gsub!(/{{MALT_TEMPLATES_PATH}}/, (share / "malt" / "templates").to_s)'
+    assert_includes @formula, 'bin_content.gsub!(/{{MALT_VERSION}}/, version.to_s)'
   end
 
   def test_formula_copies_lib_and_share_from_local_checkout

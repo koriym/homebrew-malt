@@ -27,6 +27,7 @@ class Malt < Formula
     bin_content.gsub!(/{{MALT_SHARE_PATH}}/, (share / "malt").to_s)
     bin_content.gsub!(/{{MALT_CONFIG_PATH}}/, (share / "malt" / "default.json").to_s)
     bin_content.gsub!(/{{MALT_TEMPLATES_PATH}}/, (share / "malt" / "templates").to_s)
+    bin_content.gsub!(/{{MALT_VERSION}}/, version.to_s)
     bin_file.write bin_content
     if File.exist?(bin_file)
       chmod 0755, bin_file
