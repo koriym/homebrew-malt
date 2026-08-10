@@ -66,23 +66,25 @@ malt init
   "dependencies": [
     "php@8.4",
     "mysql@8.0",
-    "composer",
-    "redis",
+    "httpd",
     "nginx",
-    "wget",
-    "wrk"
+    "redis",
+    "memcached",
+    "composer"
   ],
   "ports": {
     "php": [9000],
-    "redis": [6379],
-    "memcached": [11211],
-    "nginx": [80],
+    "mysql": [3306],
     "httpd": [8080],
-    "mysql": [3306]
+    "nginx": [80],
+    "redis": [6379],
+    "memcached": [11211]
   },
   "php_extensions": [
     "xdebug",
+    "pcov",
     "redis",
+    "memcached",
     "apcu"
   ]
 }

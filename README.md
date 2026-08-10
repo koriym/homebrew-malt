@@ -33,14 +33,30 @@ Edit `malt.json` to define your stack:
 ```json
 {
   "project_name": "myapp",
-  "dependencies": ["php@8.4", "mysql@8.0", "composer", "redis", "nginx"],
+  "dependencies": [
+    "php@8.4",
+    "mysql@8.0",
+    "httpd",
+    "nginx",
+    "redis",
+    "memcached",
+    "composer"
+  ],
   "ports": {
     "php": [9000],
-    "redis": [6379],
+    "mysql": [3306],
+    "httpd": [8080],
     "nginx": [80],
-    "mysql": [3306]
+    "redis": [6379],
+    "memcached": [11211]
   },
-  "php_extensions": ["xdebug", "redis", "apcu"]
+  "php_extensions": [
+    "xdebug",
+    "pcov",
+    "redis",
+    "memcached",
+    "apcu"
+  ]
 }
 ```
 
