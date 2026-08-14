@@ -24,7 +24,17 @@ module Malt
       return [] unless Dir.exist?(dir)
 
       Dir.glob(File.join(dir, "*.json")).filter_map do |path|
-        JSON.parse(File.read(path)).merge("_path" => path)
+        entry = JSON.parse(File.read(path))
+        next unless entry.is_a?(Hash)
+
+        pattern = Array(entry["pattern"])
+        next if pattern.empty? || pattern.any? { |p| !p.is_a?(String) || p.empty? }
+
+        valid_pid = entry["pid"].is_a?(Integer) && entry["pid"].positive?
+        valid_pid_file = entry["pid_file"].is_a?(String) && !entry["pid_file"].empty?
+        next unless valid_pid || valid_pid_file
+
+        entry.merge("_path" => path)
       rescue JSON::ParserError, SystemCallError
         nil
       end

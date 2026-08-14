@@ -35,7 +35,8 @@ Config generation happens in two phases:
 - Port-in-use check: `lsof` on macOS, `ss` on Linux.
 - Status/kill are pid-file based, not port based: each service exposes `running?(config, port, index)` (pid file + process identity via `ps`). `malt status` reports `running` / `stopped` / `external process on port` (foreign process holding the port).
 - Global pid registry: every service start records pids in `HOMEBREW_PREFIX/var/malt/pids/` (override with `MALT_REGISTRY_DIR`). `malt kill` only SIGKILLs registry pids whose live command line still matches the identity recorded at start, so it can never kill Homebrew-managed services. Never reintroduce `pkill -f` on bare process names.
-- Service daemons are spawned with stdout/stderr redirected to files in `malt/logs/` (keeps `malt start | ...` pipes closable).
+- Non-daemonizing services (mysqld_safe, php-fpm `-y`, redis-server, httpd) are spawned via `Process.spawn` with stdout/stderr redirected to files in `malt/logs/` (keeps `malt start | ...` pipes closable). Nginx (`daemon on`) and Memcached (`-d`) fork themselves and are launched with `system` instead.
+- Web server configs are PHP-conditional: `nginx-static.conf.erb`/`httpd-static.conf.erb` are used instead of the PHP-serving templates when `php` has no ports, so `fastcgi_pass`/`LoadModule php_module` are never emitted for a PHP-free project.
 - Multiple instances of a service run on different ports (e.g., `"php": [9000, 9001]`).
 - Nginx uses a main config (`nginx_main.conf`) that includes per-port `.conf.tmp` files.
 - MySQL requires data directory initialization on first start (`--initialize-insecure`). Each MySQL instance gets its own data dir `malt/var/mysql_{index}/`.

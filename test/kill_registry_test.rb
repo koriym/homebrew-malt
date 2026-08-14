@@ -78,6 +78,17 @@ class KillRegistryTest < Minitest::Test
     Process.kill("KILL", pid) rescue nil
   end
 
+  def test_registry_entries_ignores_entry_without_pattern
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    FileUtils.mkdir_p(@registry_dir)
+    File.write(File.join(@registry_dir, "malformed.json"), JSON.generate({ "service" => "redis", "pid" => pid }))
+
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
   def test_kill_prunes_stale_entries_and_reports_nothing_running
     key = File.join(@temp_dir, "stale.pid")
     @service.register_process("redis", key, ["sleep"], pid: 2_147_483_000)
