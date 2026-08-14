@@ -6,9 +6,14 @@ module Malt
   # Memcached service class
   class MemcachedService < BaseService
     def start(config)
-      config.ports["memcached"].each do |port|
-        start_memcached(config, port)
-      end
+      results = config.ports["memcached"].map { |port| start_memcached(config, port) }
+      results.all?
+    end
+
+    # Check whether Memcached on the given port is running under Malt management
+    def running?(config, port, _index = nil)
+      pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
+      pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
     end
 
     def stop(config)
@@ -24,7 +29,8 @@ module Malt
       pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
       if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
         puts "[Running] Memcached on port #{port}"
-        return
+        register_process("memcached", pid_file, memcached_identity_pattern, pid_file: pid_file)
+        return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
       end
@@ -32,7 +38,7 @@ module Malt
       # Check if port is already in use
       if port_in_use?(port)
         puts "Error: Port #{port} is already in use by another process"
-        return
+        return false
       end
 
       puts "Starting Memcached on port #{port}..."
@@ -44,10 +50,14 @@ module Malt
         sleep 0.1
       end
 
-      return if started && pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+      if started && pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+        register_process("memcached", pid_file, memcached_identity_pattern, pid_file: pid_file)
+        return true
+      end
 
       warn "Error: Failed to start Memcached on port #{port}"
       remove_stale_pid_file(pid_file)
+      false
     end
 
     def stop_memcached(config, port)
@@ -58,10 +68,13 @@ module Malt
         else
           puts "[Stopped] Memcached is not running on port #{port}"
         end
+        unregister_process(pid_file)
         return false
       end
 
-      stop_pid_file(pid_file, "Memcached on port #{port}", expected_pattern: memcached_identity_pattern)
+      stopped = stop_pid_file(pid_file, "Memcached on port #{port}", expected_pattern: memcached_identity_pattern)
+      unregister_process(pid_file) if stopped
+      stopped
     end
 
     def memcached_identity_pattern

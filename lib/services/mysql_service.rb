@@ -6,9 +6,14 @@ module Malt
   # MySQL service class
   class MysqlService < BaseService
     def start(config)
-      config.ports["mysql"].each_with_index do |port, index|
-        start_mysql(config, port, index)
-      end
+      results = config.ports["mysql"].each_with_index.map { |port, index| start_mysql(config, port, index) }
+      results.all?
+    end
+
+    # Check whether the given MySQL instance is running under Malt management
+    def running?(config, _port, index = nil)
+      pid_file = mysql_pid_file(config, index)
+      pid_running_from_file?(pid_file, expected_pattern: mysql_identity_pattern(config, index))
     end
 
     def stop(config)
@@ -31,7 +36,8 @@ module Malt
       pid_file = mysql_pid_file(config, index)
       if pid_running_from_file?(pid_file, expected_pattern: mysql_identity_pattern(config, index))
         puts "[Running] MySQL on port #{port}"
-        return
+        register_mysql_process(config, index)
+        return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
       end
@@ -39,7 +45,7 @@ module Malt
       # Check if port is already in use
       if port_in_use?(port)
         puts "Error: Port #{port} is already in use by another process"
-        return
+        return false
       end
 
       puts "Starting MySQL on port #{port}..."
@@ -52,7 +58,7 @@ module Malt
       # Abort if temp config creation failed
       if temp_conf.nil?
         puts "Error: Failed to create temporary config file for MySQL on port #{port}"
-        return
+        return false
       end
 
       puts "MySQL config path: #{temp_conf}"
@@ -74,7 +80,7 @@ module Malt
         mysqld = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqld")
         unless system(mysqld, "--initialize-insecure", "--datadir=#{data_dir}")
           puts "Error: MySQL initialization failed"
-          return
+          return false
         end
         puts "MySQL initialization complete."
       end
@@ -82,16 +88,32 @@ module Malt
       # Verify temp file exists
       unless File.exist?(temp_conf)
         puts "Error: MySQL config temp file not found at: #{temp_conf}"
-        return
+        return false
       end
 
       # Start MySQL in background
       mysqld_safe = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqld_safe")
       pid = Process.spawn(mysqld_safe, "--defaults-file=#{temp_conf}", out: [log_file, "a"], err: [:child, :out])
       Process.detach(pid)
+      # Register mysqld_safe (supervisor) by pid and mysqld by its pid file
+      register_process("mysql", "#{pid_file}.safe", ["mysqld_safe", temp_conf], pid: pid)
+      register_mysql_process(config, index)
       puts "MySQL starting in background..."
+      true
     rescue SystemCallError => e
       puts "Error: Failed to start MySQL on port #{port}: #{e.message}"
+      false
+    end
+
+    def register_mysql_process(config, index)
+      pid_file = mysql_pid_file(config, index)
+      register_process("mysql", pid_file, mysql_identity_pattern(config, index), pid_file: pid_file)
+    end
+
+    def unregister_mysql_process(config, index)
+      pid_file = mysql_pid_file(config, index)
+      unregister_process(pid_file)
+      unregister_process("#{pid_file}.safe")
     end
 
     def stop_mysql(config, port, index)
@@ -103,6 +125,7 @@ module Malt
           puts "[Stopped] MySQL is not running on port #{port}"
         end
         cleanup_mysql_temp(config, port)
+        unregister_mysql_process(config, index)
         return false
       end
 
@@ -111,6 +134,7 @@ module Malt
         puts "[Stopped] MySQL is not running on port #{port}"
         remove_stale_pid_file(pid_file)
         cleanup_mysql_temp(config, port)
+        unregister_mysql_process(config, index)
         return false
       end
 
@@ -135,6 +159,7 @@ module Malt
 
       remove_stale_pid_file(pid_file) if stopped
       cleanup_mysql_temp(config, port) if stopped || !File.exist?(pid_file)
+      unregister_mysql_process(config, index) if stopped
       stopped
     end
 

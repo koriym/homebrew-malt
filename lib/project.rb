@@ -220,6 +220,8 @@ module Malt
     end
 
     def self.generate_php_configs(config)
+      return unless config.has_service?("php")
+
       template_dir_path = MALT_TEMPLATES_PATH
       puts "Using templates from: #{template_dir_path}" if ENV["MALT_DEBUG"]
 
@@ -256,7 +258,7 @@ module Malt
                                             PORT: port,
                                             MALT_DIR: "{{MALT_DIR}}",
                                             HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
-                                            PHP_PORT: config.ports["php"].first
+                                            PHP_PORT: config.ports["php"]&.first
                                           })
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
         end

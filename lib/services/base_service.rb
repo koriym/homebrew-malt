@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
+require "digest"
 
 module Malt
   # Homebrew prefix constant shared across services
@@ -8,6 +10,45 @@ module Malt
 
   # Base service class providing common functionality for all services
   class BaseService
+    # Global registry of malt-started service processes, shared across all
+    # malt projects. `malt kill` only terminates processes recorded here,
+    # after verifying each pid's identity against the stored pattern.
+    def self.registry_dir
+      ENV["MALT_REGISTRY_DIR"] || File.join(HOMEBREW_PREFIX, "var", "malt", "pids")
+    end
+
+    # Read all registry entries. Each entry is a Hash with "service",
+    # "pattern", plus "pid" and/or "pid_file", and "_path" for its file.
+    def self.registry_entries
+      dir = registry_dir
+      return [] unless Dir.exist?(dir)
+
+      Dir.glob(File.join(dir, "*.json")).filter_map do |path|
+        JSON.parse(File.read(path)).merge("_path" => path)
+      rescue JSON::ParserError, SystemCallError
+        nil
+      end
+    end
+
+    # Record a malt-started process in the registry. `key` must be a stable
+    # identifier (e.g. the pid file path) so the entry can be removed on stop.
+    # Pass pid: for a known pid, pid_file: when the pid is read from a file.
+    def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
+      FileUtils.mkdir_p(self.class.registry_dir)
+      entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
+      entry["pid"] = pid if pid
+      entry["pid_file"] = pid_file if pid_file
+      File.write(registry_entry_path(key), JSON.generate(entry))
+    end
+
+    def unregister_process(key)
+      FileUtils.rm_f(registry_entry_path(key))
+    end
+
+    def registry_entry_path(key)
+      File.join(self.class.registry_dir, "#{Digest::MD5.hexdigest(key)}.json")
+    end
+
     # Create temporary config file with variable expansion
     def create_temp_config(config, config_path)
       create_temp_config_with_extras(config, config_path, {})

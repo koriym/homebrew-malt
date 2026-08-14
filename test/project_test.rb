@@ -110,8 +110,10 @@ class ProjectTest < Minitest::Test
     env = { "PATH" => "#{@fake_bin}:#{ENV.fetch("PATH")}" }
     stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, File.join(@repo_root, "bin", "malt.rb"), "start", "--config", config_path, chdir: outside_dir)
 
-    assert status.success?, stderr
+    # The PHP-FPM config file is missing, so start reports failure with a non-zero exit
+    refute status.success?, stderr
     refute_includes stderr, File.join(outside_dir, "malt")
+    assert_includes stderr, "Failed to start: PHP-FPM"
     assert_includes stdout, File.join(project_dir, "malt", "conf", "php-fpm_19090.conf")
   end
 

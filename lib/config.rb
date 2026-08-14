@@ -75,11 +75,6 @@ module Malt
         raise "Missing project_name in config"
       end
 
-      # Verify port settings
-      unless has_service?("php")
-        raise "Missing PHP ports in config"
-      end
-
       true
     end
 
