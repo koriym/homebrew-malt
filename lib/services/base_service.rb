@@ -168,6 +168,16 @@ module Malt
       nil
     end
 
+    # Direct and indirect children of pid (e.g. php-fpm/nginx workers forked
+    # from a supervisor). SIGKILL isn't forwarded by the OS, so callers that
+    # forcibly kill a supervisor must also kill its descendants explicitly.
+    def descendant_pids(pid)
+      direct = IO.popen(["pgrep", "-P", pid.to_s], &:read).to_s.split("\n").filter_map { |p| Integer(p, exception: false) }
+      direct + direct.flat_map { |child_pid| descendant_pids(child_pid) }
+    rescue SystemCallError
+      []
+    end
+
     def terminate_pid(pid, label, timeout: 1)
       return unless pid && pid_running?(pid)
 

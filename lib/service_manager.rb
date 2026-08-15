@@ -226,8 +226,14 @@ module Malt
           return false
         end
 
+        descendants = helper.descendant_pids(pid)
+
         puts "Forcibly terminating #{name} (pid #{pid})..."
-        Process.kill("KILL", pid)
+        [pid, *descendants].each do |target_pid|
+          Process.kill("KILL", target_pid)
+        rescue Errno::ESRCH
+          next
+        end
         helper.wait_for_pid_stop(pid, timeout: 5)
 
         if helper.pid_running?(pid)
