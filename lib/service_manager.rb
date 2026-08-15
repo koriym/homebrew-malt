@@ -18,7 +18,6 @@ module Malt
       ensure_malt_dir_exists(config)
       start_services(config)
     end
-
     def self.stop(options)
       config_path = find_config_in_current_dir(options)
       config = Malt::Config.new(config_path)
@@ -66,9 +65,13 @@ module Malt
         services = register_services(config)
 
         # Start each service
-        services.each do |service|
-          service.start(config)
+        failed = services.reject { |service| service.start(config) }
+
+        unless failed.empty?
+          warn "Error: Failed to start: #{failed.map { |s| service_display_name(s) }.join(', ')}"
+          return false
         end
+
         puts "Services started."
         puts "Run 'source <(malt env)' to set up your shell environment."
 
@@ -76,18 +79,26 @@ module Malt
         display_web_server_urls(config)
 
         puts "See https://koriym.github.io/homebrew-malt/"
+        true
+      end
+
+      def service_display_name(service)
+        key = SERVICE_CLASSES.key(service.class)
+        key ? SERVICES[key][0] : service.class.name
       end
 
       def display_web_server_urls(config)
         web_servers = []
         if config.has_service?("httpd")
+          service = HttpdService.new
           config.ports["httpd"].each do |port|
-            web_servers << "http://127.0.0.1:#{port}/" if port_in_use?(port)
+            web_servers << "http://127.0.0.1:#{port}/" if service.running?(config, port)
           end
         end
         if config.has_service?("nginx")
+          service = NginxService.new
           config.ports["nginx"].each do |port|
-            web_servers << "http://127.0.0.1:#{port}/" if port_in_use?(port)
+            web_servers << "http://127.0.0.1:#{port}/" if service.running?(config, port)
           end
         end
 
@@ -125,57 +136,119 @@ module Malt
         "httpd" => ["Apache HTTPD", "httpd"],
       }.freeze
 
+      # config_key => service class, in startup order
+      SERVICE_CLASSES = {
+        "php" => PhpService,
+        "mysql" => MysqlService,
+        "redis" => RedisService,
+        "memcached" => MemcachedService,
+        "nginx" => NginxService,
+        "httpd" => HttpdService,
+      }.freeze
+
       def show_status(config)
         puts "Service status for #{config.project_name}:"
         puts ""
 
-        SERVICES.each do |key, (name, _)|
+        SERVICE_CLASSES.each do |key, klass|
           next unless config.has_service?(key)
 
-          config.ports[key].each do |port|
-            status = port_in_use?(port) ? "running" : "stopped"
+          name = SERVICES[key][0]
+          service = klass.new
+          config.ports[key].each_with_index do |port, index|
+            status =
+              if service.running?(config, port, index)
+                "running"
+              elsif port_in_use?(port)
+                "external process on port"
+              else
+                "stopped"
+              end
             puts "  #{name} (port #{port}): #{status}"
           end
         end
       end
 
+      # Forcibly terminate only processes recorded in the Malt pid registry.
+      # Each pid's identity is verified against the pattern stored at start
+      # time before sending SIGKILL, so foreign processes (e.g. Homebrew
+      # services) are never touched. Stale entries are pruned.
       def kill_services
-        running = SERVICES.values.select { |_, pattern| process_running?(pattern) }
+        helper = Malt::BaseService.new
+        entries = Malt::BaseService.registry_entries
+
+        # Keep only entries whose process is still running; prune the rest
+        running = entries.select { |entry| registry_entry_alive?(entry, helper) }
+
+        # Kill supervisors (entries with a direct pid, e.g. mysqld_safe)
+        # before the processes they supervise so they cannot restart them
+        running.sort_by! { |entry| entry["pid"] ? 0 : 1 }
 
         if running.empty?
           puts "No running instances of supported services were found."
           return
         end
 
-        puts "About to forcibly terminate the following running services:"
-        running.each { |name, _| puts "- #{name}" }
-        puts "(This command affects all instances, regardless of malt.json configuration)"
+        puts "About to forcibly terminate the following malt-managed services:"
+        running.each do |entry|
+          puts "- #{registry_entry_name(entry)} (pid #{registry_entry_pid(entry, helper)})"
+        end
+        puts "(Only processes started by malt are terminated; other instances are left untouched)"
 
-        any_killed = running.map { |name, pattern| kill_service(pattern, name) }.any?
+        any_killed = running.map { |entry| kill_registry_entry(entry, helper) }.any?
         puts "Forcible termination of services completed." if any_killed
       end
 
-      def process_running?(pattern)
-        system("pgrep", "-f", pattern, out: File::NULL, err: File::NULL)
+      def registry_entry_alive?(entry, helper)
+        pid = registry_entry_pid(entry, helper)
+        alive = pid && helper.pid_running?(pid)
+        FileUtils.rm_f(entry["_path"]) unless alive
+        !!alive
       end
 
-      def kill_service(pattern, name)
-        return false unless process_running?(pattern)
+      def registry_entry_pid(entry, helper)
+        return entry["pid"] if entry["pid"]
 
-        puts "Forcibly terminating #{name}..."
-        system("pkill", "-9", "-f", pattern)
-        sleep 0.5
+        helper.read_pid_file(entry["pid_file"])
+      end
 
-        # Retry if still running
-        if process_running?(pattern)
-          warn "Warning: #{name} processes still running despite SIGKILL, retrying..."
-          system("pkill", "-9", "-f", pattern)
-          sleep 0.5
+      def registry_entry_name(entry)
+        SERVICES.dig(entry["service"], 0) || entry["service"].to_s
+      end
+
+      def kill_registry_entry(entry, helper)
+        name = registry_entry_name(entry)
+        pid = registry_entry_pid(entry, helper)
+
+        unless pid && helper.pid_matches?(pid, entry["pattern"])
+          warn "Warning: #{name} pid #{pid || 'unknown'} does not match the expected process. Leaving it untouched."
+          FileUtils.rm_f(entry["_path"])
+          return false
         end
 
-        still_running = process_running?(pattern)
-        warn "Warning: Failed to forcibly terminate #{name}" if still_running
-        !still_running
+        descendants = helper.descendant_pids(pid)
+
+        puts "Forcibly terminating #{name} (pid #{pid})..."
+        [pid, *descendants].each do |target_pid|
+          Process.kill("KILL", target_pid)
+        rescue Errno::ESRCH
+          next
+        end
+        helper.wait_for_pid_stop(pid, timeout: 5)
+
+        if helper.pid_running?(pid)
+          warn "Warning: Failed to forcibly terminate #{name}"
+          return false
+        end
+
+        FileUtils.rm_f(entry["_path"])
+        true
+      rescue Errno::ESRCH
+        FileUtils.rm_f(entry["_path"])
+        true
+      rescue Errno::EPERM => e
+        warn "Warning: Failed to terminate #{name}: #{e.message}"
+        false
       end
 
       # Clean up old temporary config files to prevent .tmp.tmp accumulation
@@ -196,27 +269,7 @@ module Malt
       end
 
       def register_services(config)
-        services = []
-
-        # PHP-FPM
-        services << PhpService.new if config.has_service?("php")
-
-        # MySQL
-        services << MysqlService.new if config.has_service?("mysql")
-
-        # Redis
-        services << RedisService.new if config.has_service?("redis")
-
-        # Memcached
-        services << MemcachedService.new if config.has_service?("memcached")
-
-        # Nginx
-        services << NginxService.new if config.has_service?("nginx")
-
-        # Apache
-        services << HttpdService.new if config.has_service?("httpd")
-
-        services
+        SERVICE_CLASSES.filter_map { |key, klass| klass.new if config.has_service?(key) }
       end
     end
   end

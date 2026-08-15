@@ -6,9 +6,13 @@ module Malt
   # Apache HTTPD service class
   class HttpdService < BaseService
     def start(config)
-      config.ports["httpd"].each do |port|
-        start_httpd(config, port)
-      end
+      results = config.ports["httpd"].map { |port| start_httpd(config, port) }
+      results.all?
+    end
+
+    # Check whether Apache HTTPD on the given port is running under Malt management
+    def running?(config, port, _index = nil)
+      pid_running_from_file?(httpd_pid_file(config, port), expected_pattern: httpd_temp_config_path(config, port))
     end
 
     def stop(config)
@@ -21,10 +25,12 @@ module Malt
 
     def start_httpd(config, port)
       FileUtils.mkdir_p(config.var_dir)
+      FileUtils.mkdir_p(config.logs_dir)
       pid_file = httpd_pid_file(config, port)
       if pid_running_from_file?(pid_file, expected_pattern: httpd_temp_config_path(config, port))
         puts "[Running] Apache HTTPD on port #{port}"
-        return
+        register_process("httpd", pid_file, httpd_temp_config_path(config, port), pid_file: pid_file)
+        return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
       end
@@ -32,7 +38,7 @@ module Malt
       # Check if port is already in use
       if port_in_use?(port)
         puts "Error: Port #{port} is already in use by another process"
-        return
+        return false
       end
 
       puts "Starting Apache HTTPD on port #{port}..."
@@ -45,27 +51,30 @@ module Malt
       # Abort if temp config creation failed
       if temp_conf.nil?
         puts "Error: Failed to create temporary config file for Apache HTTPD on port #{port}"
-        return
+        return false
       end
 
       # Verify temp file exists
       unless File.exist?(temp_conf)
         puts "Error: Apache HTTPD config temp file not found at: #{temp_conf}"
-        return
+        return false
       end
 
-      # Start with temporary config
+      # Start with temporary config (redirect output so the daemon doesn't hold the caller's pipes open)
       httpd = File.join(HOMEBREW_PREFIX, "bin", "httpd")
+      log_file = File.join(config.logs_dir, "httpd_#{port}.log")
       puts "Running command: #{httpd} -f #{temp_conf}"
       begin
-        pid = Process.spawn(httpd, "-f", temp_conf)
+        pid = Process.spawn(httpd, "-f", temp_conf, out: [log_file, "a"], err: [:child, :out])
         Process.detach(pid)
       rescue SystemCallError => e
         puts "Error: Failed to start Apache HTTPD on port #{port}"
         puts e.message if ENV["MALT_DEBUG"]
-        return
+        return false
       end
+      register_process("httpd", pid_file, httpd_temp_config_path(config, port), pid_file: pid_file)
       puts "Apache HTTPD starting in background..."
+      true
     end
 
     def stop_httpd(config, port)
@@ -77,6 +86,7 @@ module Malt
           puts "[Stopped] Apache HTTPD is not running on port #{port}"
         end
         cleanup_httpd_temp(config, port)
+        unregister_process(pid_file)
         return false
       end
 
@@ -85,6 +95,7 @@ module Malt
         puts "[Stopped] Apache HTTPD is not running on port #{port}"
         remove_stale_pid_file(pid_file)
         cleanup_httpd_temp(config, port)
+        unregister_process(pid_file)
         return false
       end
 
@@ -111,6 +122,7 @@ module Malt
 
       remove_stale_pid_file(pid_file) if stopped
       cleanup_httpd_temp(config, port) if stopped || !File.exist?(pid_file)
+      unregister_process(pid_file) if stopped
       stopped
     end
 

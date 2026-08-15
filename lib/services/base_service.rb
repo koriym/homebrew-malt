@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
+require "digest"
 
 module Malt
   # Homebrew prefix constant shared across services
@@ -8,6 +10,55 @@ module Malt
 
   # Base service class providing common functionality for all services
   class BaseService
+    # Global registry of malt-started service processes, shared across all
+    # malt projects. `malt kill` only terminates processes recorded here,
+    # after verifying each pid's identity against the stored pattern.
+    def self.registry_dir
+      ENV["MALT_REGISTRY_DIR"] || File.join(HOMEBREW_PREFIX, "var", "malt", "pids")
+    end
+
+    # Read all registry entries. Each entry is a Hash with "service",
+    # "pattern", plus "pid" and/or "pid_file", and "_path" for its file.
+    def self.registry_entries
+      dir = registry_dir
+      return [] unless Dir.exist?(dir)
+
+      Dir.glob(File.join(dir, "*.json")).filter_map do |path|
+        entry = JSON.parse(File.read(path))
+        next unless entry.is_a?(Hash)
+
+        pattern = Array(entry["pattern"])
+        next if pattern.empty? || pattern.any? { |p| !p.is_a?(String) || p.empty? }
+
+        valid_pid = entry["pid"].is_a?(Integer) && entry["pid"].positive?
+        valid_pid_file = entry["pid_file"].is_a?(String) && !entry["pid_file"].empty?
+        next unless valid_pid || valid_pid_file
+
+        entry.merge("_path" => path)
+      rescue JSON::ParserError, SystemCallError
+        nil
+      end
+    end
+
+    # Record a malt-started process in the registry. `key` must be a stable
+    # identifier (e.g. the pid file path) so the entry can be removed on stop.
+    # Pass pid: for a known pid, pid_file: when the pid is read from a file.
+    def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
+      FileUtils.mkdir_p(self.class.registry_dir)
+      entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
+      entry["pid"] = pid if pid
+      entry["pid_file"] = pid_file if pid_file
+      File.write(registry_entry_path(key), JSON.generate(entry))
+    end
+
+    def unregister_process(key)
+      FileUtils.rm_f(registry_entry_path(key))
+    end
+
+    def registry_entry_path(key)
+      File.join(self.class.registry_dir, "#{Digest::MD5.hexdigest(key)}.json")
+    end
+
     # Create temporary config file with variable expansion
     def create_temp_config(config, config_path)
       create_temp_config_with_extras(config, config_path, {})
@@ -115,6 +166,16 @@ module Malt
       IO.popen(["ps", "-p", pid.to_s, "-o", "command="], &:read).to_s.strip
     rescue SystemCallError
       nil
+    end
+
+    # Direct and indirect children of pid (e.g. php-fpm/nginx workers forked
+    # from a supervisor). SIGKILL isn't forwarded by the OS, so callers that
+    # forcibly kill a supervisor must also kill its descendants explicitly.
+    def descendant_pids(pid)
+      direct = IO.popen(["pgrep", "-P", pid.to_s], &:read).to_s.split("\n").filter_map { |p| Integer(p, exception: false) }
+      direct + direct.flat_map { |child_pid| descendant_pids(child_pid) }
+    rescue SystemCallError
+      []
     end
 
     def terminate_pid(pid, label, timeout: 1)

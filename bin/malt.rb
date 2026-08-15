@@ -110,7 +110,7 @@ begin
   when "create"
     Malt::Project.create(options)
   when "start"
-    Malt::ServiceManager.start(options)
+    exit 1 unless Malt::ServiceManager.start(options)
   when "stop"
     Malt::ServiceManager.stop(options)
   when "status"

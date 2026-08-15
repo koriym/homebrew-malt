@@ -41,6 +41,40 @@ class ProjectTest < Minitest::Test
     assert_includes stdout, "--defaults-file\\=#{File.join(@temp_dir, "malt", "conf", "my_3306.cnf")}"
   end
 
+  def test_create_generates_php_free_nginx_config_without_fastcgi
+    config_path = File.join(@temp_dir, "malt.json")
+    File.write(config_path, JSON.generate({
+      "project_name" => "static_site",
+      "dependencies" => [],
+      "ports" => { "nginx" => [8080] },
+      "php_extensions" => []
+    }))
+
+    _stdout, stderr, status = run_malt("create", "--config", config_path)
+
+    assert status.success?, stderr
+    content = File.read(File.join(@temp_dir, "malt", "conf", "nginx_8080.conf"))
+    refute_includes content, "fastcgi_pass"
+    refute_includes content, "index.php"
+  end
+
+  def test_create_generates_php_free_httpd_config_without_php_module
+    config_path = File.join(@temp_dir, "malt.json")
+    File.write(config_path, JSON.generate({
+      "project_name" => "static_site",
+      "dependencies" => [],
+      "ports" => { "httpd" => [8081] },
+      "php_extensions" => []
+    }))
+
+    _stdout, stderr, status = run_malt("create", "--config", config_path)
+
+    assert status.success?, stderr
+    content = File.read(File.join(@temp_dir, "malt", "conf", "httpd_8081.conf"))
+    refute_includes content, "php_module"
+    refute_includes content, "x-httpd-php"
+  end
+
   def test_install_deps_returns_nonzero_when_brew_install_fails
     write_fake_brew(fail_install: true)
     config_path = File.join(@temp_dir, "malt.json")
@@ -110,8 +144,10 @@ class ProjectTest < Minitest::Test
     env = { "PATH" => "#{@fake_bin}:#{ENV.fetch("PATH")}" }
     stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, File.join(@repo_root, "bin", "malt.rb"), "start", "--config", config_path, chdir: outside_dir)
 
-    assert status.success?, stderr
+    # The PHP-FPM config file is missing, so start reports failure with a non-zero exit
+    refute status.success?, stderr
     refute_includes stderr, File.join(outside_dir, "malt")
+    assert_includes stderr, "Failed to start: PHP-FPM"
     assert_includes stdout, File.join(project_dir, "malt", "conf", "php-fpm_19090.conf")
   end
 

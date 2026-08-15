@@ -9,6 +9,11 @@ module Malt
       start_nginx(config)
     end
 
+    # Check whether Nginx is running under Malt management
+    def running?(config, _port = nil, _index = nil)
+      pid_running_from_file?(nginx_pid_file(config), expected_pattern: nginx_temp_config(config))
+    end
+
     def stop(config)
       stop_nginx(config)
     end
@@ -22,7 +27,8 @@ module Malt
 
       if pid_running_from_file?(pid_file, expected_pattern: nginx_temp_config(config))
         puts "[Running] Nginx on ports #{ports_str}"
-        return
+        register_process("nginx", pid_file, nginx_temp_config(config), pid_file: pid_file)
+        return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
       end
@@ -30,7 +36,7 @@ module Malt
       conflict_ports = config.ports["nginx"].select { |port| port_in_use?(port) }
       unless conflict_ports.empty?
         puts "Error: Nginx port(s) already in use by another process: #{conflict_ports.join(', ')}"
-        return
+        return false
       end
 
       puts "Starting Nginx on ports #{ports_str}..."
@@ -39,13 +45,18 @@ module Malt
       # Error if temp file creation failed
       if temp_conf.nil?
         puts "Error: Failed to create temporary config file for Nginx"
-        return
+        return false
       end
 
       # Start nginx with temporary config
       nginx_bin = File.join(HOMEBREW_PREFIX, "bin", "nginx")
       puts "Running command: #{nginx_bin} -c #{temp_conf}"
-      puts "Error: Failed to start Nginx" unless system(nginx_bin, "-c", temp_conf)
+      unless system(nginx_bin, "-c", temp_conf)
+        puts "Error: Failed to start Nginx"
+        return false
+      end
+      register_process("nginx", pid_file, nginx_temp_config(config), pid_file: pid_file)
+      true
     end
 
     def stop_nginx(config)
@@ -58,11 +69,13 @@ module Malt
         else
           warn "Warning: Nginx appears to be running on port(s) #{running_ports.join(', ')}, but no Malt pid file was found. Leaving it untouched."
         end
+        unregister_process(pid_file)
         return false
       end
 
       stopped = stop_nginx_with_config(config, pid_file)
       cleanup_nginx_temp_files(config) if stopped || !File.exist?(pid_file)
+      unregister_process(pid_file) if stopped
       stopped
     end
 
