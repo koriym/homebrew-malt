@@ -160,6 +160,25 @@ class KillRegistryTest < Minitest::Test
     [supervisor, worker].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
   end
 
+  def test_kill_stays_silent_when_a_group_kill_already_terminated_another_entry
+    child_pid_file = File.join(@temp_dir, "child.pid")
+    supervisor = Process.spawn("sh", "-c", "sleep 30 & echo $! > #{child_pid_file}; exec sleep 31", pgroup: true)
+    Process.detach(supervisor)
+    child = wait_for_pid_file(child_pid_file)
+    # The child is registered via pid_file so the supervisor (direct pid) is killed first
+    @service.register_process("mysql", File.join(@temp_dir, "mysqld.pid.safe"), ["sleep"], pid: supervisor)
+    @service.register_process("mysql", File.join(@temp_dir, "mysqld.pid"), ["sleep"], pid_file: child_pid_file)
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    refute_includes err, "does not match the expected process"
+    refute @service.pid_running?(supervisor), "supervisor must be killed"
+    refute @service.pid_running?(child), "child in the supervisor process group must be killed too"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    [supervisor, child].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
   def test_kill_spares_unregistered_process_with_identical_command_line
     registered = Process.spawn("sleep", "30")
     bystander = Process.spawn("sleep", "30")

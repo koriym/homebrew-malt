@@ -220,6 +220,13 @@ module Malt
         name = registry_entry_name(entry)
         pid = registry_entry_pid(entry, helper)
 
+        # A group kill of an earlier entry (e.g. its supervisor) may have
+        # already terminated this one; prune it silently instead of warning
+        if pid && !helper.pid_running?(pid)
+          FileUtils.rm_f(entry["_path"])
+          return true
+        end
+
         matched = pid && helper.pid_matches?(pid, entry["pattern"])
         if pid && matched.nil?
           warn "Warning: Could not verify #{name} pid #{pid}. Leaving it untouched."
