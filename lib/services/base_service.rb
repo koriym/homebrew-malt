@@ -44,11 +44,19 @@ module Malt
     # identifier (e.g. the pid file path) so the entry can be removed on stop.
     # Pass pid: for a known pid, pid_file: when the pid is read from a file.
     def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
-      FileUtils.mkdir_p(self.class.registry_dir)
+      FileUtils.mkdir_p(self.class.registry_dir, mode: 0o700)
       entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
       entry["pid"] = pid if pid
       entry["pid_file"] = pid_file if pid_file
-      File.write(registry_entry_path(key), JSON.generate(entry))
+
+      # Write via a sibling temp file and rename so a crash never leaves a
+      # half-written entry that registry_entries would silently skip
+      path = registry_entry_path(key)
+      tmp_path = "#{path}.tmp.#{Process.pid}"
+      File.write(tmp_path, JSON.generate(entry), perm: 0o600)
+      File.rename(tmp_path, path)
+    ensure
+      FileUtils.rm_f(tmp_path) if tmp_path
     end
 
     def unregister_process(key)
