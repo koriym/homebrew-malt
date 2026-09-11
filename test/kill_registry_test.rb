@@ -78,6 +78,37 @@ class KillRegistryTest < Minitest::Test
     Process.kill("KILL", pid) rescue nil
   end
 
+  def test_memcached_running_requires_pid_file_on_command_line
+    port = 11_211
+    config = config_with_ports("memcached" => [port])
+    pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
+    FileUtils.mkdir_p(config.var_dir)
+
+    foreign = spawn_as("memcached -d -p #{port} -P /other/malt/var/memcached_#{port}.pid")
+    File.write(pid_file, foreign.to_s)
+    refute Malt::MemcachedService.new.running?(config, port), "memcached with another pid file must not count as ours"
+
+    own = spawn_as("memcached -d -p #{port} -P #{pid_file}")
+    File.write(pid_file, own.to_s)
+    assert Malt::MemcachedService.new.running?(config, port)
+  ensure
+    [foreign, own].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
+  def test_kill_spares_memcached_with_different_pid_file
+    pid_file = File.join(@temp_dir, "malt", "var", "memcached_11211.pid")
+    pattern = Malt::MemcachedService.new.send(:memcached_identity_pattern, pid_file)
+    foreign = spawn_as("memcached -d -p 11211 -P /other/malt/var/memcached_11211.pid")
+    @service.register_process("memcached", pid_file, pattern, pid: foreign)
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    assert @service.pid_running?(foreign), "memcached with another pid file must not be killed"
+    assert_includes err, "does not match the expected process"
+  ensure
+    Process.kill("KILL", foreign) rescue nil
+  end
+
   def test_registry_entries_ignores_entry_without_pattern
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)
@@ -184,6 +215,13 @@ class KillRegistryTest < Minitest::Test
   end
 
   private
+
+  # Start a sleep whose argv[0] mimics another service's command line
+  def spawn_as(command_line)
+    pid = Process.spawn(["/bin/sleep", command_line], "30")
+    Process.detach(pid)
+    pid
+  end
 
   def write_ports(ports)
     File.write(File.join(@temp_dir, "malt.json"), JSON.generate({

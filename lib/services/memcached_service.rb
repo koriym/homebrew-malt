@@ -13,7 +13,7 @@ module Malt
     # Check whether Memcached on the given port is running under Malt management
     def running?(config, port, _index = nil)
       pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
-      pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+      pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern(pid_file))
     end
 
     def stop(config)
@@ -27,9 +27,9 @@ module Malt
     def start_memcached(config, port)
       FileUtils.mkdir_p(config.var_dir)
       pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
-      if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+      if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern(pid_file))
         puts "[Running] Memcached on port #{port}"
-        register_process("memcached", pid_file, memcached_identity_pattern, pid_file: pid_file)
+        register_process("memcached", pid_file, memcached_identity_pattern(pid_file), pid_file: pid_file)
         return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
@@ -45,13 +45,13 @@ module Malt
 
       started = system("memcached", "-d", "-m", "64", "-p", port.to_s, "-u", "memcached", "-c", "1024", "-P", pid_file, "-l", "127.0.0.1")
       20.times do
-        break if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
+        break if pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern(pid_file))
 
         sleep 0.1
       end
 
-      if started && pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern)
-        register_process("memcached", pid_file, memcached_identity_pattern, pid_file: pid_file)
+      if started && pid_running_from_file?(pid_file, expected_pattern: memcached_identity_pattern(pid_file))
+        register_process("memcached", pid_file, memcached_identity_pattern(pid_file), pid_file: pid_file)
         return true
       end
 
@@ -72,13 +72,13 @@ module Malt
         return false
       end
 
-      stopped = stop_pid_file(pid_file, "Memcached on port #{port}", expected_pattern: memcached_identity_pattern)
+      stopped = stop_pid_file(pid_file, "Memcached on port #{port}", expected_pattern: memcached_identity_pattern(pid_file))
       unregister_process(pid_file) if stopped
       stopped
     end
 
-    def memcached_identity_pattern
-      "memcached"
+    def memcached_identity_pattern(pid_file)
+      ["memcached", pid_file]
     end
   end
 end
