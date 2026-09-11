@@ -77,7 +77,7 @@ module Malt
       php_fpm_bin = File.join(HOMEBREW_PREFIX, "opt", "php@#{config.php_version}", "sbin", "php-fpm")
       log_file = File.join(config.logs_dir, "php-fpm_#{port}.log")
       pid = nil
-      pid = Process.spawn(php_fpm_bin, "-y", temp_conf, "-c", temp_ini, out: [log_file, "a"], err: [:child, :out])
+      pid = Process.spawn(php_fpm_bin, "-y", temp_conf, "-c", temp_ini, out: [log_file, "a"], err: [:child, :out], pgroup: true)
       File.write(pid_file, pid.to_s)
       Process.detach(pid)
       register_process("php", pid_file, php_fpm_temp_conf(config, port), pid_file: pid_file)

@@ -69,7 +69,7 @@ module Malt
       puts "Running command: redis-server #{temp_conf}"
       log_file = File.join(config.logs_dir, "redis_#{port}.log")
       pid = nil
-      pid = Process.spawn("redis-server", temp_conf, out: [log_file, "a"], err: [:child, :out])
+      pid = Process.spawn("redis-server", temp_conf, out: [log_file, "a"], err: [:child, :out], pgroup: true)
       File.write(pid_file, pid.to_s)
       Process.detach(pid)
       register_process("redis", pid_file, redis_identity_pattern(port), pid_file: pid_file)

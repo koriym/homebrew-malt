@@ -65,7 +65,7 @@ module Malt
       log_file = File.join(config.logs_dir, "httpd_#{port}.log")
       puts "Running command: #{httpd} -f #{temp_conf}"
       begin
-        pid = Process.spawn(httpd, "-f", temp_conf, out: [log_file, "a"], err: [:child, :out])
+        pid = Process.spawn(httpd, "-f", temp_conf, out: [log_file, "a"], err: [:child, :out], pgroup: true)
         Process.detach(pid)
       rescue SystemCallError => e
         puts "Error: Failed to start Apache HTTPD on port #{port}"

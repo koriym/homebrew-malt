@@ -93,7 +93,7 @@ module Malt
 
       # Start MySQL in background
       mysqld_safe = File.join(HOMEBREW_PREFIX, "opt", "mysql@#{config.mysql_version}", "bin", "mysqld_safe")
-      pid = Process.spawn(mysqld_safe, "--defaults-file=#{temp_conf}", out: [log_file, "a"], err: [:child, :out])
+      pid = Process.spawn(mysqld_safe, "--defaults-file=#{temp_conf}", out: [log_file, "a"], err: [:child, :out], pgroup: true)
       Process.detach(pid)
       # Register mysqld_safe (supervisor) by pid and mysqld by its pid file
       register_process("mysql", "#{pid_file}.safe", ["mysqld_safe", temp_conf], pid: pid)

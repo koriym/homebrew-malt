@@ -119,6 +119,27 @@ class KillRegistryTest < Minitest::Test
     Process.kill("KILL", foreign) rescue nil
   end
 
+  def test_kill_terminates_workers_in_the_supervisor_process_group_without_pgrep
+    worker_pid_file = File.join(@temp_dir, "worker.pid")
+    supervisor = Process.spawn("sh", "-c", "sleep 30 & echo $! > #{worker_pid_file}; exec sleep 31", pgroup: true)
+    Process.detach(supervisor)
+    worker = wait_for_pid_file(worker_pid_file)
+    key = File.join(@temp_dir, "supervisor.pid")
+    @service.register_process("php", key, ["sleep"], pid: supervisor)
+
+    bin = File.join(@temp_dir, "ps-only-bin")
+    FileUtils.mkdir_p(bin)
+    File.symlink(`command -v ps`.chomp, File.join(bin, "ps"))
+    out, = with_path(bin) { capture_io { Malt::ServiceManager.send(:kill_services) } }
+
+    assert_includes out, "Forcible termination of services completed."
+    refute @service.pid_running?(supervisor), "supervisor must be killed"
+    refute @service.pid_running?(worker), "worker forked by the supervisor must be killed too"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    [supervisor, worker].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
   def test_kill_keeps_entry_when_process_cannot_be_verified
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)
@@ -248,6 +269,16 @@ class KillRegistryTest < Minitest::Test
     pid = Process.spawn(["/bin/sleep", command_line], "30")
     Process.detach(pid)
     pid
+  end
+
+  def wait_for_pid_file(path)
+    50.times do
+      pid = @service.read_pid_file(path)
+      return pid if pid
+
+      sleep 0.1
+    end
+    flunk "pid file #{path} was not written"
   end
 
   # Run the block with PATH limited to dir (create it with only the tools the test allows)
