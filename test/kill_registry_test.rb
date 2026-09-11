@@ -51,13 +51,13 @@ class KillRegistryTest < Minitest::Test
   def test_register_process_restricts_registry_permissions
     key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
     @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
-  
+
     assert_equal 0o700, File.stat(@registry_dir).mode & 0o777
     entry_path = Malt::BaseService.registry_entries[0]["_path"]
     assert_equal 0o600, File.stat(entry_path).mode & 0o777
     assert_equal [File.basename(entry_path)], Dir.children(@registry_dir), "no temp file left behind"
   end
-  
+
   def test_kill_terminates_registered_matching_process
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)
