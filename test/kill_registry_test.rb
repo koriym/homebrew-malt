@@ -58,6 +58,14 @@ class KillRegistryTest < Minitest::Test
     assert_equal [File.basename(entry_path)], Dir.children(@registry_dir), "no temp file left behind"
   end
 
+  def test_register_process_tightens_permissions_on_existing_registry_dir
+    FileUtils.mkdir_p(@registry_dir, mode: 0o755)
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+
+    assert_equal 0o700, File.stat(@registry_dir).mode & 0o777
+  end
+
   def test_register_mysql_safe_process_restores_supervisor_entry
     config = config_with_ports("mysql" => [3306])
     File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")

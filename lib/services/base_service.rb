@@ -45,6 +45,9 @@ module Malt
     # Pass pid: for a known pid, pid_file: when the pid is read from a file.
     def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
       FileUtils.mkdir_p(self.class.registry_dir, mode: 0o700)
+      # mkdir_p only applies the mode to newly created directories, so
+      # tighten the permissions of a pre-existing directory every time
+      File.chmod(0o700, self.class.registry_dir)
       entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
       entry["pid"] = pid if pid
       entry["pid_file"] = pid_file if pid_file
