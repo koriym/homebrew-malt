@@ -58,6 +58,26 @@ class KillRegistryTest < Minitest::Test
     assert_equal [File.basename(entry_path)], Dir.children(@registry_dir), "no temp file left behind"
   end
 
+  def test_register_mysql_safe_process_restores_supervisor_entry
+    config = config_with_ports("mysql" => [3306])
+    File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
+    safe_pid_file = File.join(config.var_dir, "mysql_0", "mysqld_safe.pid")
+    FileUtils.mkdir_p(File.dirname(safe_pid_file))
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    File.write(safe_pid_file, pid.to_s)
+
+    Malt::MysqlService.new.send(:register_mysql_safe_process, config, 3306, 0)
+
+    entries = Malt::BaseService.registry_entries
+    assert_equal 1, entries.size
+    assert_equal "mysql", entries[0]["service"]
+    assert_equal pid, entries[0]["pid"]
+    assert_equal ["mysqld_safe", File.join(config.conf_dir, "my_3306.cnf.tmp")], entries[0]["pattern"]
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
   def test_kill_terminates_registered_matching_process
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)

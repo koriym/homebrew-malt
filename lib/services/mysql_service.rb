@@ -37,6 +37,7 @@ module Malt
       if pid_running_from_file?(pid_file, expected_pattern: mysql_identity_pattern(config, index))
         puts "[Running] MySQL on port #{port}"
         register_mysql_process(config, index)
+        register_mysql_safe_process(config, port, index)
         return true
       elsif File.exist?(pid_file)
         remove_stale_pid_file(pid_file)
@@ -96,6 +97,7 @@ module Malt
       pid = Process.spawn(mysqld_safe, "--defaults-file=#{temp_conf}", out: [log_file, "a"], err: [:child, :out], pgroup: true)
       Process.detach(pid)
       # Register mysqld_safe (supervisor) by pid and mysqld by its pid file
+      File.write(mysql_safe_pid_file(config, index), pid.to_s)
       register_process("mysql", "#{pid_file}.safe", ["mysqld_safe", temp_conf], pid: pid)
       register_mysql_process(config, index)
       puts "MySQL starting in background..."
@@ -110,10 +112,21 @@ module Malt
       register_process("mysql", pid_file, mysql_identity_pattern(config, index), pid_file: pid_file)
     end
 
+    # Re-register the mysqld_safe supervisor from its persisted pid file so
+    # `malt kill` can still find it even if the original registration was lost
+    def register_mysql_safe_process(config, port, index)
+      pid = read_pid_file(mysql_safe_pid_file(config, index))
+      return unless pid && pid_running?(pid)
+
+      pid_file = mysql_pid_file(config, index)
+      register_process("mysql", "#{pid_file}.safe", ["mysqld_safe", mysql_temp_config(config, port, index)], pid: pid)
+    end
+
     def unregister_mysql_process(config, index)
       pid_file = mysql_pid_file(config, index)
       unregister_process(pid_file)
       unregister_process("#{pid_file}.safe")
+      remove_stale_pid_file(mysql_safe_pid_file(config, index))
     end
 
     def stop_mysql(config, port, index)
@@ -165,6 +178,10 @@ module Malt
 
     def mysql_pid_file(config, index)
       File.join(config.var_dir, "mysql_#{index}", "mysqld.pid")
+    end
+
+    def mysql_safe_pid_file(config, index)
+      File.join(config.var_dir, "mysql_#{index}", "mysqld_safe.pid")
     end
 
     def mysql_identity_pattern(config, index)
