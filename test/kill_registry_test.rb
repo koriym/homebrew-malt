@@ -140,6 +140,21 @@ class KillRegistryTest < Minitest::Test
     [supervisor, worker].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
   end
 
+  def test_kill_spares_unregistered_process_with_identical_command_line
+    registered = Process.spawn("sleep", "30")
+    bystander = Process.spawn("sleep", "30")
+    [registered, bystander].each { |pid| Process.detach(pid) }
+    key = File.join(@temp_dir, "sleep.pid")
+    @service.register_process("redis", key, ["sleep"], pid: registered)
+
+    capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    refute @service.pid_running?(registered), "registered process must be killed"
+    assert @service.pid_running?(bystander), "identical but unregistered process must survive"
+  ensure
+    [registered, bystander].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
   def test_kill_keeps_entry_when_process_cannot_be_verified
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)
