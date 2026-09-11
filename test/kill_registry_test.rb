@@ -119,6 +119,23 @@ class KillRegistryTest < Minitest::Test
     Process.kill("KILL", foreign) rescue nil
   end
 
+  def test_kill_keeps_entry_when_process_cannot_be_verified
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    key = File.join(@temp_dir, "sleep.pid")
+    @service.register_process("redis", key, ["sleep"], pid: pid)
+
+    _, err = with_path(File.join(@temp_dir, "empty-bin")) do
+      capture_io { Malt::ServiceManager.send(:kill_services) }
+    end
+
+    assert @service.pid_running?(pid), "process must be left alone when ps is unavailable"
+    assert_includes err, "Could not verify Redis pid #{pid}"
+    assert_equal 1, Malt::BaseService.registry_entries.size, "entry must survive a verification failure"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
   def test_registry_entries_ignores_entry_without_pattern
     pid = Process.spawn("sleep", "30")
     Process.detach(pid)
@@ -231,6 +248,16 @@ class KillRegistryTest < Minitest::Test
     pid = Process.spawn(["/bin/sleep", command_line], "30")
     Process.detach(pid)
     pid
+  end
+
+  # Run the block with PATH limited to dir (create it with only the tools the test allows)
+  def with_path(dir)
+    FileUtils.mkdir_p(dir)
+    saved = ENV["PATH"]
+    ENV["PATH"] = dir
+    yield
+  ensure
+    ENV["PATH"] = saved
   end
 
   def write_ports(ports)

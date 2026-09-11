@@ -159,11 +159,14 @@ module Malt
       false
     end
 
+    # nil means the command line could not be read at all (e.g. ps failed),
+    # as opposed to false for a process that is genuinely something else
     def pid_matches?(pid, expected_pattern)
       return true if expected_pattern.nil?
 
       command = process_command(pid)
-      return false if command.nil? || command.empty?
+      return nil if command.nil?
+      return false if command.empty?
 
       Array(expected_pattern).all? do |pattern|
         pattern.is_a?(Regexp) ? command.match?(pattern) : command.include?(pattern.to_s)

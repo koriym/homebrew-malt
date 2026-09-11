@@ -220,7 +220,13 @@ module Malt
         name = registry_entry_name(entry)
         pid = registry_entry_pid(entry, helper)
 
-        unless pid && helper.pid_matches?(pid, entry["pattern"])
+        matched = pid && helper.pid_matches?(pid, entry["pattern"])
+        if pid && matched.nil?
+          warn "Warning: Could not verify #{name} pid #{pid}. Leaving it untouched."
+          return false
+        end
+
+        unless matched
           warn "Warning: #{name} pid #{pid || 'unknown'} does not match the expected process. Leaving it untouched."
           FileUtils.rm_f(entry["_path"])
           return false
