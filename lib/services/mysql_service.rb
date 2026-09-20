@@ -113,20 +113,44 @@ module Malt
     end
 
     # Re-register the mysqld_safe supervisor from its persisted pid file so
-    # `malt kill` can still find it even if the original registration was lost
+    # `malt kill` can still find it even if the original registration was lost.
+    # The pid file outlives the process it names, so confirm the identity
+    # before recording a pid the system may have reused.
     def register_mysql_safe_process(config, port, index)
       pid = read_pid_file(mysql_safe_pid_file(config, index))
       return unless pid && pid_running?(pid)
 
-      pid_file = mysql_pid_file(config, index)
-      register_process("mysql", "#{pid_file}.safe", ["mysqld_safe", mysql_temp_config(config, port, index)], pid: pid)
+      pattern = mysql_safe_identity_pattern(config, port, index)
+      return unless pattern && pid_matches?(pid, pattern)
+
+      register_process("mysql", "#{mysql_pid_file(config, index)}.safe", pattern, pid: pid)
     end
 
-    def unregister_mysql_process(config, index)
-      pid_file = mysql_pid_file(config, index)
-      unregister_process(pid_file)
-      unregister_process("#{pid_file}.safe")
-      remove_stale_pid_file(mysql_safe_pid_file(config, index))
+    def unregister_mysql_process(config, port, index)
+      unregister_process(mysql_pid_file(config, index))
+      unregister_mysql_safe_process(config, port, index)
+    end
+
+    # mysqld_safe restarts mysqld when it dies, so it has to be gone before
+    # its entry is dropped: without the entry `malt kill` can no longer reach it
+    def unregister_mysql_safe_process(config, port, index)
+      safe_pid_file = mysql_safe_pid_file(config, index)
+      key = "#{mysql_pid_file(config, index)}.safe"
+      pid = read_pid_file(safe_pid_file)
+
+      unless pid && pid_running?(pid)
+        remove_stale_pid_file(safe_pid_file)
+        unregister_process(key)
+        return
+      end
+
+      pattern = mysql_safe_identity_pattern(config, port, index)
+      # No project-unique token to match on: leave the entry so `malt kill`
+      # can still reach mysqld_safe rather than signal it unverified
+      return unless pattern
+
+      stopped = stop_pid_file(safe_pid_file, "mysqld_safe on port #{port}", expected_pattern: pattern)
+      unregister_process(key) if stopped
     end
 
     def stop_mysql(config, port, index)
@@ -137,8 +161,8 @@ module Malt
         else
           puts "[Stopped] MySQL is not running on port #{port}"
         end
+        unregister_mysql_process(config, port, index)
         cleanup_mysql_temp(config, port)
-        unregister_mysql_process(config, index)
         return false
       end
 
@@ -146,8 +170,8 @@ module Malt
       unless pid && pid_running?(pid)
         puts "[Stopped] MySQL is not running on port #{port}"
         remove_stale_pid_file(pid_file)
+        unregister_mysql_process(config, port, index)
         cleanup_mysql_temp(config, port)
-        unregister_mysql_process(config, index)
         return false
       end
 
@@ -171,8 +195,8 @@ module Malt
       end
 
       remove_stale_pid_file(pid_file) if stopped
+      unregister_mysql_process(config, port, index) if stopped
       cleanup_mysql_temp(config, port) if stopped || !File.exist?(pid_file)
-      unregister_mysql_process(config, index) if stopped
       stopped
     end
 
@@ -186,6 +210,15 @@ module Malt
 
     def mysql_identity_pattern(config, index)
       File.join(config.var_dir, "mysql_#{index}")
+    end
+
+    # nil when the temp config is gone: "mysqld_safe" alone would match any
+    # project's supervisor, and the command line carries no other unique token
+    def mysql_safe_identity_pattern(config, port, index)
+      temp_conf = mysql_temp_config(config, port, index)
+      return nil if temp_conf.nil?
+
+      ["mysqld_safe", temp_conf]
     end
 
     def mysql_temp_config(config, port, index)

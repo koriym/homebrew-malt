@@ -13,8 +13,18 @@ module Malt
     # Global registry of malt-started service processes, shared across all
     # malt projects. `malt kill` only terminates processes recorded here,
     # after verifying each pid's identity against the stored pattern.
+    # It lives under the user's home because HOMEBREW_PREFIX/var is
+    # group-writable on a default install: anyone in that group could swap
+    # the registry for one naming arbitrary pids.
+    def self.registry_dirs
+      return [ENV["MALT_REGISTRY_DIR"]] if ENV["MALT_REGISTRY_DIR"]
+
+      malt_home = File.join(Dir.home, ".malt")
+      [malt_home, File.join(malt_home, "pids")]
+    end
+
     def self.registry_dir
-      ENV["MALT_REGISTRY_DIR"] || File.join(HOMEBREW_PREFIX, "var", "malt", "pids")
+      registry_dirs.last
     end
 
     # Read all registry entries. Each entry is a Hash with "service",
@@ -23,8 +33,15 @@ module Malt
       dir = registry_dir
       return [] unless Dir.exist?(dir)
 
+      unless trusted_registry_path?(dir, &:directory?)
+        warn "Warning: Ignoring #{dir}: the pid registry must be a directory owned by you and writable only by you."
+        return []
+      end
+
       Dir.glob(File.join(dir, "*.json")).filter_map do |path|
-        entry = JSON.parse(File.read(path))
+        next unless trusted_registry_path?(path, &:file?)
+
+        entry = JSON.parse(read_registry_entry(path))
         next unless entry.is_a?(Hash)
 
         pattern = Array(entry["pattern"])
@@ -40,14 +57,32 @@ module Malt
       end
     end
 
+    # An entry another account can write is an arbitrary kill target, so the
+    # path must be ours alone. lstat, so a symlink or a fifo fails the type
+    # check instead of being followed.
+    def self.trusted_registry_path?(path)
+      stat = File.lstat(path)
+      yield(stat) && stat.uid == Process.uid && (stat.mode & 0o022).zero?
+    rescue SystemCallError
+      false
+    end
+
+    def self.read_registry_entry(path)
+      flags = File::RDONLY
+      flags |= File::NOFOLLOW if File.const_defined?(:NOFOLLOW)
+      File.open(path, flags, &:read)
+    end
+
     # Record a malt-started process in the registry. `key` must be a stable
     # identifier (e.g. the pid file path) so the entry can be removed on stop.
     # Pass pid: for a known pid, pid_file: when the pid is read from a file.
     def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
-      FileUtils.mkdir_p(self.class.registry_dir, mode: 0o700)
-      # mkdir_p only applies the mode to newly created directories, so
-      # tighten the permissions of a pre-existing directory every time
-      File.chmod(0o700, self.class.registry_dir)
+      dirs = self.class.registry_dirs
+      FileUtils.mkdir_p(dirs.last, mode: 0o700)
+      # mkdir_p only applies the mode to newly created directories, so tighten
+      # every level we own every time: a group-writable ~/.malt lets another
+      # account replace pids/ wholesale
+      dirs.each { |dir| File.chmod(0o700, dir) }
       entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
       entry["pid"] = pid if pid
       entry["pid_file"] = pid_file if pid_file
