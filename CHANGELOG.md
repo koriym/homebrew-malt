@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0beta11
+
+### Scoped `malt kill`
+- Replace pattern-matching `pkill -f` with a pid registry: `malt kill` only SIGKILLs processes malt recorded at start, after re-checking each pid's live command line against the identity stored with it. Homebrew-managed services are never touched.
+- Store the registry in `~/.malt/pids` instead of `HOMEBREW_PREFIX/var`, which is group-writable on a default install. Both directories are forced to `0700`, entries are written atomically with `0600`, and a registry directory or entry that is not a plain directory/file owned by the current user and writable only by them is ignored.
+- Kill the service process group instead of enumerating children with `pgrep`, so php-fpm and nginx workers cannot be orphaned when child discovery fails.
+- Identify every service by a project-unique token: Memcached now matches on its pid file and `mysqld_safe` on its defaults file, so another project's or Homebrew's instance can never match.
+- Keep a registry entry when a pid cannot be verified, and distinguish an unreadable pid file from a genuine identity mismatch.
+
+### Service Status And Startup
+- `malt status` is pid based and reports `running` / `stopped` / `external process on port`.
+- `malt start` exits non-zero when any service fails to start.
+- Persist the `mysqld_safe` pid so a lost supervisor registration is restored on the next `malt start`, and stop a surviving supervisor before dropping its entry: `mysqld_safe` restarts `mysqld`, and an entry-less supervisor is unreachable by `malt kill`.
+
+### PHP-free Projects
+- `php` ports are no longer required. Projects without PHP use `nginx-static.conf.erb` / `httpd-static.conf.erb`, so no `fastcgi_pass` or `LoadModule php_module` is emitted.
+
 ## 1.0.0beta10
 
 ### Service Lifecycle Safety
