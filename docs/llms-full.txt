@@ -91,10 +91,10 @@ Cleans up old `.tmp` files, creates new temporary configs with template variable
 Stops services in reverse order. Cleans up temporary config files (unless `MALT_DEBUG=1`).
 
 ### `malt status`
-Shows running/stopped state of all configured services by checking port usage per configured port.
+Shows `running` / `stopped` / `external process on port` per configured port, from each service's pid file and the process identity recorded at start.
 
 ### `malt kill`
-Force-kills all Malt-related service processes (php-fpm, mysqld, redis-server, memcached, nginx, httpd) using SIGKILL, regardless of malt.json configuration.
+Force-kills only the service processes malt started, using SIGKILL, across all projects and regardless of malt.json. Malt records every pid it starts in `~/.malt/pids`, and re-checks each pid's live command line against the identity stored with it before signalling, so Homebrew-managed or otherwise foreign processes are left untouched.
 
 ### `malt env`
 Outputs a shell script that exports environment variables and creates aliases:

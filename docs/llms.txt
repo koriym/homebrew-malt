@@ -61,8 +61,8 @@ Fields:
 - `malt create` — Generate malt/ directory with service configs (no-op if malt/ exists; delete it to regenerate)
 - `malt start` — Start all configured services; displays access URLs
 - `malt stop` — Stop all services and clean up temporary config files
-- `malt status` — Show running/stopped status per port
-- `malt kill` — Force-kill all Malt-related processes (SIGKILL), regardless of malt.json
+- `malt status` — Show running / stopped / external-process state per port
+- `malt kill` — Force-kill only malt-started service processes (SIGKILL), across all projects, regardless of malt.json
 - `malt env` — Output shell script: `source <(malt env)` sets PATH, MALT_DIR, DOCUMENT_ROOT, and port-specific aliases (e.g., `mysql@3306`, `redis-cli@6379`)
 - `malt info` — Show project name, directory, and configured service ports
 
