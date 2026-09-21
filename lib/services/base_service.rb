@@ -27,10 +27,23 @@ module Malt
       registry_dirs.last
     end
 
+    # Services started before the registry moved recorded their pids here.
+    # Entries are read (under the same ownership checks, which reject a
+    # directory another account substituted) so `malt kill` can still reach
+    # those processes, and are never written, so the directory drains itself.
+    def self.legacy_registry_dir
+      return nil if ENV["MALT_REGISTRY_DIR"]
+
+      File.join(HOMEBREW_PREFIX, "var", "malt", "pids")
+    end
+
     # Read all registry entries. Each entry is a Hash with "service",
     # "pattern", plus "pid" and/or "pid_file", and "_path" for its file.
     def self.registry_entries
-      dir = registry_dir
+      [registry_dir, legacy_registry_dir].compact.uniq.flat_map { |dir| registry_entries_in(dir) }
+    end
+
+    def self.registry_entries_in(dir)
       return [] unless Dir.exist?(dir)
 
       unless trusted_registry_path?(dir, &:directory?)

@@ -103,6 +103,45 @@ class KillRegistryTest < Minitest::Test
     assert_includes err, "the pid registry must be a directory owned by you"
   end
 
+  def test_legacy_registry_dir_is_ignored_when_the_registry_is_overridden
+    assert_nil Malt::BaseService.legacy_registry_dir
+  end
+
+  def test_legacy_registry_dir_points_at_the_pre_move_location
+    ENV.delete("MALT_REGISTRY_DIR")
+
+    assert_equal File.join(Malt::HOMEBREW_PREFIX, "var", "malt", "pids"),
+                 Malt::BaseService.legacy_registry_dir
+  end
+
+  def test_kill_reaches_a_process_recorded_before_the_registry_moved
+    legacy_dir = File.join(@temp_dir, "legacy-pids")
+    FileUtils.mkdir_p(legacy_dir, mode: 0o700)
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    File.write(File.join(legacy_dir, "old.json"),
+               JSON.generate({ "service" => "redis", "pattern" => ["sleep"], "pid" => pid }), perm: 0o600)
+    with_legacy_registry(legacy_dir) { capture_io { Malt::ServiceManager.send(:kill_services) } }
+
+    refute @service.pid_running?(pid), "a pid recorded before the move must still be killable"
+    assert_empty Dir.glob(File.join(legacy_dir, "*.json")), "its entry must be pruned once killed"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_legacy_registry_dir_substituted_by_another_account_is_ignored
+    legacy_dir = File.join(@temp_dir, "legacy-pids")
+    FileUtils.mkdir_p(legacy_dir, mode: 0o755)
+    File.write(File.join(legacy_dir, "old.json"),
+               JSON.generate({ "service" => "redis", "pattern" => ["sleep"], "pid" => Process.pid }))
+    File.chmod(0o777, legacy_dir)
+
+    entries = nil
+    with_legacy_registry(legacy_dir) { capture_io { entries = Malt::BaseService.registry_entries } }
+
+    assert_empty entries
+  end
+
   def test_register_mysql_safe_process_restores_supervisor_entry
     config = config_with_ports("mysql" => [3306])
     File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
@@ -494,6 +533,15 @@ class KillRegistryTest < Minitest::Test
     yield
   ensure
     ENV["PATH"] = saved
+  end
+
+  # Point the pre-move registry at dir, restoring the real lookup afterwards
+  def with_legacy_registry(dir)
+    original = Malt::BaseService.method(:legacy_registry_dir)
+    Malt::BaseService.define_singleton_method(:legacy_registry_dir) { dir }
+    yield
+  ensure
+    Malt::BaseService.define_singleton_method(:legacy_registry_dir, original)
   end
 
   def write_ports(ports)
