@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
+require "digest"
 
 module Malt
   # Homebrew prefix constant shared across services
@@ -8,6 +10,101 @@ module Malt
 
   # Base service class providing common functionality for all services
   class BaseService
+    # Global registry of malt-started service processes, shared across all
+    # malt projects. `malt kill` only terminates processes recorded here,
+    # after verifying each pid's identity against the stored pattern.
+    # It lives under the user's home because HOMEBREW_PREFIX/var is
+    # group-writable on a default install: anyone in that group could swap
+    # the registry for one naming arbitrary pids.
+    def self.registry_dirs
+      return [ENV["MALT_REGISTRY_DIR"]] if ENV["MALT_REGISTRY_DIR"]
+
+      malt_home = File.join(Dir.home, ".malt")
+      [malt_home, File.join(malt_home, "pids")]
+    end
+
+    def self.registry_dir
+      registry_dirs.last
+    end
+
+    # Read all registry entries. Each entry is a Hash with "service",
+    # "pattern", plus "pid" and/or "pid_file", and "_path" for its file.
+    def self.registry_entries
+      dir = registry_dir
+      return [] unless Dir.exist?(dir)
+
+      unless trusted_registry_path?(dir, &:directory?)
+        warn "Warning: Ignoring #{dir}: the pid registry must be a directory owned by you and writable only by you."
+        return []
+      end
+
+      Dir.glob(File.join(dir, "*.json")).filter_map do |path|
+        next unless trusted_registry_path?(path, &:file?)
+
+        entry = JSON.parse(read_registry_entry(path))
+        next unless entry.is_a?(Hash)
+
+        pattern = Array(entry["pattern"])
+        next if pattern.empty? || pattern.any? { |p| !p.is_a?(String) || p.empty? }
+
+        valid_pid = entry["pid"].is_a?(Integer) && entry["pid"].positive?
+        valid_pid_file = entry["pid_file"].is_a?(String) && !entry["pid_file"].empty?
+        next unless valid_pid || valid_pid_file
+
+        entry.merge("_path" => path)
+      rescue JSON::ParserError, SystemCallError
+        nil
+      end
+    end
+
+    # An entry another account can write is an arbitrary kill target, so the
+    # path must be ours alone. lstat, so a symlink or a fifo fails the type
+    # check instead of being followed.
+    def self.trusted_registry_path?(path)
+      stat = File.lstat(path)
+      yield(stat) && stat.uid == Process.uid && (stat.mode & 0o022).zero?
+    rescue SystemCallError
+      false
+    end
+
+    def self.read_registry_entry(path)
+      flags = File::RDONLY
+      flags |= File::NOFOLLOW if File.const_defined?(:NOFOLLOW)
+      File.open(path, flags, &:read)
+    end
+
+    # Record a malt-started process in the registry. `key` must be a stable
+    # identifier (e.g. the pid file path) so the entry can be removed on stop.
+    # Pass pid: for a known pid, pid_file: when the pid is read from a file.
+    def register_process(service, key, expected_pattern, pid: nil, pid_file: nil)
+      dirs = self.class.registry_dirs
+      FileUtils.mkdir_p(dirs.last, mode: 0o700)
+      # mkdir_p only applies the mode to newly created directories, so tighten
+      # every level we own every time: a group-writable ~/.malt lets another
+      # account replace pids/ wholesale
+      dirs.each { |dir| File.chmod(0o700, dir) }
+      entry = { "service" => service, "pattern" => Array(expected_pattern).map(&:to_s) }
+      entry["pid"] = pid if pid
+      entry["pid_file"] = pid_file if pid_file
+
+      # Write via a sibling temp file and rename so a crash never leaves a
+      # half-written entry that registry_entries would silently skip
+      path = registry_entry_path(key)
+      tmp_path = "#{path}.tmp.#{Process.pid}"
+      File.write(tmp_path, JSON.generate(entry), perm: 0o600)
+      File.rename(tmp_path, path)
+    ensure
+      FileUtils.rm_f(tmp_path) if tmp_path
+    end
+
+    def unregister_process(key)
+      FileUtils.rm_f(registry_entry_path(key))
+    end
+
+    def registry_entry_path(key)
+      File.join(self.class.registry_dir, "#{Digest::MD5.hexdigest(key)}.json")
+    end
+
     # Create temporary config file with variable expansion
     def create_temp_config(config, config_path)
       create_temp_config_with_extras(config, config_path, {})
@@ -100,11 +197,14 @@ module Malt
       false
     end
 
+    # nil means the command line could not be read at all (e.g. ps failed),
+    # as opposed to false for a process that is genuinely something else
     def pid_matches?(pid, expected_pattern)
       return true if expected_pattern.nil?
 
       command = process_command(pid)
-      return false if command.nil? || command.empty?
+      return nil if command.nil?
+      return false if command.empty?
 
       Array(expected_pattern).all? do |pattern|
         pattern.is_a?(Regexp) ? command.match?(pattern) : command.include?(pattern.to_s)
@@ -115,6 +215,15 @@ module Malt
       IO.popen(["ps", "-p", pid.to_s, "-o", "command="], &:read).to_s.strip
     rescue SystemCallError
       nil
+    end
+
+    # SIGKILL pid together with the workers it forked. Services are spawned
+    # with pgroup: true (or setsid themselves when daemonizing), so the
+    # supervisor leads a process group that contains exactly its descendants.
+    # A pid that does not lead a group is killed alone.
+    def kill_process_group(pid)
+      target = Process.getpgid(pid) == pid ? -pid : pid
+      Process.kill("KILL", target)
     end
 
     def terminate_pid(pid, label, timeout: 1)

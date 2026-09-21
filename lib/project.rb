@@ -220,6 +220,8 @@ module Malt
     end
 
     def self.generate_php_configs(config)
+      return unless config.has_service?("php")
+
       template_dir_path = MALT_TEMPLATES_PATH
       puts "Using templates from: #{template_dir_path}" if ENV["MALT_DEBUG"]
 
@@ -246,18 +248,18 @@ module Malt
     end
 
     def self.generate_webserver_configs(config)
+      has_php = config.has_service?("php")
+
       if config.ports["nginx"]
-        nginx_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx.conf.erb"))
+        nginx_template_name = has_php ? "nginx.conf.erb" : "nginx-static.conf.erb"
+        nginx_template = Malt::Template.new(File.join(templates_dir, "nginx", nginx_template_name))
         nginx_main_template = Malt::Template.new(File.join(templates_dir, "nginx", "nginx_main.conf.erb"))
 
         nginx_includes = config.ports["nginx"].map { |port| "include {{MALT_DIR}}/conf/nginx_#{port}.conf.tmp;" }.join("\n  ")
         config.ports["nginx"].each do |port|
-          content = nginx_template.render({
-                                            PORT: port,
-                                            MALT_DIR: "{{MALT_DIR}}",
-                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
-                                            PHP_PORT: config.ports["php"].first
-                                          })
+          vars = { PORT: port, MALT_DIR: "{{MALT_DIR}}", HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}" }
+          vars[:PHP_PORT] = config.ports["php"].first if has_php
+          content = nginx_template.render(vars)
           File.write(File.join(config.malt_dir, "conf", "nginx_#{port}.conf"), content)
         end
 
@@ -266,16 +268,13 @@ module Malt
       end
 
       if config.ports["httpd"]
-        httpd_template = Malt::Template.new(File.join(templates_dir, "httpd", "httpd.conf.erb"))
-        php_lib_path = "{{HOMEBREW_PREFIX}}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so"
+        httpd_template_name = has_php ? "httpd.conf.erb" : "httpd-static.conf.erb"
+        httpd_template = Malt::Template.new(File.join(templates_dir, "httpd", httpd_template_name))
 
         config.ports["httpd"].each do |port|
-          content = httpd_template.render({
-                                            PORT: port,
-                                            MALT_DIR: "{{MALT_DIR}}",
-                                            HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}",
-                                            PHP_LIB_PATH: php_lib_path
-                                          })
+          vars = { PORT: port, MALT_DIR: "{{MALT_DIR}}", HOMEBREW_PREFIX: "{{HOMEBREW_PREFIX}}" }
+          vars[:PHP_LIB_PATH] = "{{HOMEBREW_PREFIX}}/opt/php@#{config.php_version}/lib/httpd/modules/libphp.so" if has_php
+          content = httpd_template.render(vars)
           File.write(File.join(config.malt_dir, "conf", "httpd_#{port}.conf"), content)
         end
       end

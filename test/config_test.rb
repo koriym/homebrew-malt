@@ -206,16 +206,14 @@ class ConfigTest < Minitest::Test
     end
   end
 
-  def test_validate_raises_for_missing_php_ports
+  def test_validate_passes_without_php_ports
     write_config({
       "project_name" => "test",
-      "ports" => { "mysql" => [3306] }
+      "ports" => { "redis" => [6379] }
     })
 
     config = Malt::Config.new(@config_path)
 
-    assert_raises RuntimeError do
-      config.validate!
-    end
+    assert config.validate!
   end
 end

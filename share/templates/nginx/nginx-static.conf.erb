@@ -1,0 +1,13 @@
+server {
+  listen {{PORT}};
+  server_name localhost;
+  root "{{PROJECT_DIR}}/public";
+  index index.html index.htm;
+
+  access_log "{{MALT_DIR}}/logs/nginx_{{PORT}}_access.log";
+  error_log "{{MALT_DIR}}/logs/nginx_{{PORT}}_error.log";
+
+  location / {
+    try_files $uri $uri/ =404;
+  }
+}

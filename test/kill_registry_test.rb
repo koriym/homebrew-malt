@@ -1,0 +1,512 @@
+# frozen_string_literal: true
+
+require_relative "test_helper"
+require "socket"
+
+class KillRegistryTest < Minitest::Test
+  def setup
+    @temp_dir = Dir.mktmpdir("malt_test")
+    @registry_dir = File.join(@temp_dir, "registry")
+    @saved_registry_dir = ENV["MALT_REGISTRY_DIR"]
+    ENV["MALT_REGISTRY_DIR"] = @registry_dir
+
+    File.write(File.join(@temp_dir, "malt.json"), <<~JSON)
+      {
+        "project_name": "test_project",
+        "dependencies": ["php@8.4", "redis"],
+        "ports": {
+          "php": [9000],
+          "redis": [6379]
+        },
+        "php_extensions": []
+      }
+    JSON
+    FileUtils.mkdir_p(File.join(@temp_dir, "malt", "conf"))
+    FileUtils.mkdir_p(File.join(@temp_dir, "malt", "logs"))
+    FileUtils.mkdir_p(File.join(@temp_dir, "malt", "var"))
+
+    @config = Malt::Config.new(File.join(@temp_dir, "malt.json"))
+    @service = Malt::BaseService.new
+  end
+
+  def teardown
+    ENV["MALT_REGISTRY_DIR"] = @saved_registry_dir
+    FileUtils.rm_rf(@temp_dir)
+  end
+
+  def test_register_and_unregister_process_roundtrip
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+
+    entries = Malt::BaseService.registry_entries
+    assert_equal 1, entries.size
+    assert_equal "redis", entries[0]["service"]
+    assert_equal ["redis-server", "6379"], entries[0]["pattern"]
+    assert_equal key, entries[0]["pid_file"]
+
+    @service.unregister_process(key)
+    assert_empty Malt::BaseService.registry_entries
+  end
+
+  def test_register_process_restricts_registry_permissions
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+
+    assert_equal 0o700, File.stat(@registry_dir).mode & 0o777
+    entry_path = Malt::BaseService.registry_entries[0]["_path"]
+    assert_equal 0o600, File.stat(entry_path).mode & 0o777
+    assert_equal [File.basename(entry_path)], Dir.children(@registry_dir), "no temp file left behind"
+  end
+
+  def test_register_process_tightens_permissions_on_existing_registry_dir
+    FileUtils.mkdir_p(@registry_dir, mode: 0o755)
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+
+    assert_equal 0o700, File.stat(@registry_dir).mode & 0o777
+  end
+
+  def test_registry_dir_defaults_under_home
+    ENV.delete("MALT_REGISTRY_DIR")
+
+    assert_equal File.join(Dir.home, ".malt", "pids"), Malt::BaseService.registry_dir
+  end
+
+  def test_registry_entries_ignores_symlinked_entry
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+    entry_path = Malt::BaseService.registry_entries[0]["_path"]
+    planted = File.join(@temp_dir, "planted.json")
+    File.rename(entry_path, planted)
+    File.symlink(planted, entry_path)
+
+    assert_empty Malt::BaseService.registry_entries
+  end
+
+  def test_registry_entries_ignores_entry_writable_by_others
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+    File.chmod(0o620, Malt::BaseService.registry_entries[0]["_path"])
+
+    assert_empty Malt::BaseService.registry_entries
+  end
+
+  def test_registry_entries_ignores_registry_dir_writable_by_others
+    key = File.join(@temp_dir, "malt", "var", "redis_6379.pid")
+    @service.register_process("redis", key, ["redis-server", "6379"], pid_file: key)
+    File.chmod(0o770, @registry_dir)
+
+    entries = nil
+    _, err = capture_io { entries = Malt::BaseService.registry_entries }
+
+    assert_empty entries
+    assert_includes err, "the pid registry must be a directory owned by you"
+  end
+
+  def test_register_mysql_safe_process_restores_supervisor_entry
+    config = config_with_ports("mysql" => [3306])
+    File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
+    temp_conf = File.join(config.conf_dir, "my_3306.cnf.tmp")
+    pid = write_safe_pid_file(config, spawn_as("mysqld_safe --defaults-file=#{temp_conf}"))
+
+    Malt::MysqlService.new.send(:register_mysql_safe_process, config, 3306, 0)
+
+    entries = Malt::BaseService.registry_entries
+    assert_equal 1, entries.size
+    assert_equal "mysql", entries[0]["service"]
+    assert_equal pid, entries[0]["pid"]
+    assert_equal ["mysqld_safe", temp_conf], entries[0]["pattern"]
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_register_mysql_safe_process_skips_a_reused_pid
+    config = config_with_ports("mysql" => [3306])
+    File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
+    pid = write_safe_pid_file(config, spawn_as("sleep"))
+
+    Malt::MysqlService.new.send(:register_mysql_safe_process, config, 3306, 0)
+
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_register_mysql_safe_process_skips_when_the_temp_config_is_gone
+    config = config_with_ports("mysql" => [3306])
+    temp_conf = File.join(config.conf_dir, "my_3306.cnf.tmp")
+    pid = write_safe_pid_file(config, spawn_as("mysqld_safe --defaults-file=#{temp_conf}"))
+
+    capture_io { Malt::MysqlService.new.send(:register_mysql_safe_process, config, 3306, 0) }
+
+    assert_empty Malt::BaseService.registry_entries,
+                 "without a project-unique token the supervisor must not be registered"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_unregister_mysql_process_keeps_the_supervisor_it_cannot_identify
+    config = config_with_ports("mysql" => [3306])
+    my_cnf = File.join(config.conf_dir, "my_3306.cnf")
+    File.write(my_cnf, "port = 3306\n")
+    temp_conf = File.join(config.conf_dir, "my_3306.cnf.tmp")
+    service = Malt::MysqlService.new
+    pid = write_safe_pid_file(config, spawn_as("mysqld_safe --defaults-file=#{temp_conf}"))
+    service.send(:register_mysql_safe_process, config, 3306, 0)
+    FileUtils.rm_f([my_cnf, temp_conf])
+
+    capture_io { service.send(:unregister_mysql_process, config, 3306, 0) }
+
+    assert service.pid_running?(pid), "an unidentifiable supervisor must not be signalled"
+    assert_equal 1, Malt::BaseService.registry_entries.size,
+                 "its entry must survive so malt kill can still reach it"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_unregister_mysql_process_stops_a_surviving_supervisor
+    config = config_with_ports("mysql" => [3306])
+    File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
+    temp_conf = File.join(config.conf_dir, "my_3306.cnf.tmp")
+    pid = write_safe_pid_file(config, spawn_as("mysqld_safe --defaults-file=#{temp_conf}"))
+    service = Malt::MysqlService.new
+    service.send(:register_mysql_safe_process, config, 3306, 0)
+
+    capture_io { service.send(:unregister_mysql_process, config, 3306, 0) }
+
+    refute @service.pid_running?(pid), "a surviving mysqld_safe must be stopped before its entry is dropped"
+    assert_empty Malt::BaseService.registry_entries
+    refute File.exist?(File.join(config.var_dir, "mysql_0", "mysqld_safe.pid"))
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_unregister_mysql_process_keeps_the_entry_of_a_supervisor_it_did_not_stop
+    config = config_with_ports("mysql" => [3306])
+    File.write(File.join(config.conf_dir, "my_3306.cnf"), "port = 3306\n")
+    pid = write_safe_pid_file(config, spawn_as("mysqld_safe --defaults-file=/other/malt/conf/my_3306.cnf.tmp"))
+    pid_file = File.join(config.var_dir, "mysql_0", "mysqld.pid")
+    @service.register_process("mysql", "#{pid_file}.safe", ["mysqld_safe"], pid: pid)
+
+    _, err = capture_io { Malt::MysqlService.new.send(:unregister_mysql_safe_process, config, 3306, 0) }
+
+    assert @service.pid_running?(pid), "a mysqld_safe of another project must be left alone"
+    assert_includes err, "does not match the expected process"
+    assert_equal 1, Malt::BaseService.registry_entries.size, "the entry must survive so `malt kill` can still reach it"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_unregister_mysql_process_cleans_up_a_dead_supervisor_silently
+    config = config_with_ports("mysql" => [3306])
+    write_safe_pid_file(config, 2_147_483_000)
+    pid_file = File.join(config.var_dir, "mysql_0", "mysqld.pid")
+    @service.register_process("mysql", "#{pid_file}.safe", ["mysqld_safe"], pid: 2_147_483_000)
+
+    out, err = capture_io { Malt::MysqlService.new.send(:unregister_mysql_process, config, 3306, 0) }
+
+    assert_empty err
+    assert_empty out
+    assert_empty Malt::BaseService.registry_entries
+    refute File.exist?(File.join(config.var_dir, "mysql_0", "mysqld_safe.pid"))
+  end
+
+  def test_kill_terminates_registered_matching_process
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    key = File.join(@temp_dir, "sleep.pid")
+    @service.register_process("redis", key, ["sleep"], pid: pid)
+
+    out, = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    assert_includes out, "Forcibly terminating Redis (pid #{pid})"
+    refute @service.pid_running?(pid), "expected sleep process to be killed"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_kill_leaves_process_alive_when_command_does_not_match
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    key = File.join(@temp_dir, "fake-mysql.pid")
+    @service.register_process("mysql", key, ["mysqld"], pid: pid)
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    assert @service.pid_running?(pid), "foreign process must not be killed"
+    assert_includes err, "does not match the expected process"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_memcached_running_requires_pid_file_on_command_line
+    port = 11_211
+    config = config_with_ports("memcached" => [port])
+    pid_file = File.join(config.var_dir, "memcached_#{port}.pid")
+    FileUtils.mkdir_p(config.var_dir)
+
+    foreign = spawn_as("memcached -d -p #{port} -P /other/malt/var/memcached_#{port}.pid")
+    File.write(pid_file, foreign.to_s)
+    refute Malt::MemcachedService.new.running?(config, port), "memcached with another pid file must not count as ours"
+
+    own = spawn_as("memcached -d -p #{port} -P #{pid_file}")
+    File.write(pid_file, own.to_s)
+    assert Malt::MemcachedService.new.running?(config, port)
+  ensure
+    [foreign, own].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
+  def test_kill_spares_memcached_with_different_pid_file
+    pid_file = File.join(@temp_dir, "malt", "var", "memcached_11211.pid")
+    pattern = Malt::MemcachedService.new.send(:memcached_identity_pattern, pid_file)
+    foreign = spawn_as("memcached -d -p 11211 -P /other/malt/var/memcached_11211.pid")
+    @service.register_process("memcached", pid_file, pattern, pid: foreign)
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    assert @service.pid_running?(foreign), "memcached with another pid file must not be killed"
+    assert_includes err, "does not match the expected process"
+  ensure
+    Process.kill("KILL", foreign) rescue nil
+  end
+
+  def test_kill_terminates_workers_in_the_supervisor_process_group_without_pgrep
+    worker_pid_file = File.join(@temp_dir, "worker.pid")
+    supervisor = Process.spawn("sh", "-c", "sleep 30 & echo $! > #{worker_pid_file}; exec sleep 31", pgroup: true)
+    Process.detach(supervisor)
+    worker = wait_for_pid_file(worker_pid_file)
+    key = File.join(@temp_dir, "supervisor.pid")
+    @service.register_process("php", key, ["sleep"], pid: supervisor)
+
+    bin = File.join(@temp_dir, "ps-only-bin")
+    FileUtils.mkdir_p(bin)
+    File.symlink(`command -v ps`.chomp, File.join(bin, "ps"))
+    out, = with_path(bin) { capture_io { Malt::ServiceManager.send(:kill_services) } }
+
+    assert_includes out, "Forcible termination of services completed."
+    refute @service.pid_running?(supervisor), "supervisor must be killed"
+    refute @service.pid_running?(worker), "worker forked by the supervisor must be killed too"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    [supervisor, worker].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
+  def test_kill_stays_silent_when_a_group_kill_already_terminated_another_entry
+    child_pid_file = File.join(@temp_dir, "child.pid")
+    supervisor = Process.spawn("sh", "-c", "sleep 30 & echo $! > #{child_pid_file}; exec sleep 31", pgroup: true)
+    Process.detach(supervisor)
+    child = wait_for_pid_file(child_pid_file)
+    # The child is registered via pid_file so the supervisor (direct pid) is killed first
+    @service.register_process("mysql", File.join(@temp_dir, "mysqld.pid.safe"), ["sleep"], pid: supervisor)
+    @service.register_process("mysql", File.join(@temp_dir, "mysqld.pid"), ["sleep"], pid_file: child_pid_file)
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    refute_includes err, "does not match the expected process"
+    refute @service.pid_running?(supervisor), "supervisor must be killed"
+    refute @service.pid_running?(child), "child in the supervisor process group must be killed too"
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    [supervisor, child].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
+  def test_kill_spares_unregistered_process_with_identical_command_line
+    registered = Process.spawn("sleep", "30")
+    bystander = Process.spawn("sleep", "30")
+    [registered, bystander].each { |pid| Process.detach(pid) }
+    key = File.join(@temp_dir, "sleep.pid")
+    @service.register_process("redis", key, ["sleep"], pid: registered)
+
+    capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    refute @service.pid_running?(registered), "registered process must be killed"
+    assert @service.pid_running?(bystander), "identical but unregistered process must survive"
+  ensure
+    [registered, bystander].compact.each { |pid| Process.kill("KILL", pid) rescue nil }
+  end
+
+  def test_kill_keeps_entry_when_process_cannot_be_verified
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    key = File.join(@temp_dir, "sleep.pid")
+    @service.register_process("redis", key, ["sleep"], pid: pid)
+
+    _, err = with_path(File.join(@temp_dir, "empty-bin")) do
+      capture_io { Malt::ServiceManager.send(:kill_services) }
+    end
+
+    assert @service.pid_running?(pid), "process must be left alone when ps is unavailable"
+    assert_includes err, "Could not verify Redis pid #{pid}"
+    assert_equal 1, Malt::BaseService.registry_entries.size, "entry must survive a verification failure"
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_kill_reports_an_unreadable_pid_file_instead_of_a_mismatch
+    key = File.join(@temp_dir, "vanished.pid")
+    @service.register_process("redis", key, ["redis-server"], pid_file: key)
+    entry = Malt::BaseService.registry_entries[0]
+
+    _, err = capture_io { Malt::ServiceManager.send(:kill_registry_entry, entry, @service) }
+
+    assert_includes err, "Could not read the pid file of Redis"
+    refute_includes err, "does not match the expected process"
+  end
+
+  def test_registry_entries_ignores_entry_without_pattern
+    pid = Process.spawn("sleep", "30")
+    Process.detach(pid)
+    FileUtils.mkdir_p(@registry_dir)
+    File.write(File.join(@registry_dir, "malformed.json"), JSON.generate({ "service" => "redis", "pid" => pid }))
+
+    assert_empty Malt::BaseService.registry_entries
+  ensure
+    Process.kill("KILL", pid) rescue nil
+  end
+
+  def test_kill_prunes_stale_entries_and_reports_nothing_running
+    key = File.join(@temp_dir, "stale.pid")
+    @service.register_process("redis", key, ["sleep"], pid: 2_147_483_000)
+
+    out, = capture_io { Malt::ServiceManager.send(:kill_services) }
+
+    assert_includes out, "No running instances of supported services were found."
+    assert_empty Malt::BaseService.registry_entries
+  end
+
+  def test_status_reports_external_process_when_port_occupied_by_foreign_process
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    write_ports("redis" => [port])
+
+    config = Malt::Config.new(File.join(@temp_dir, "malt.json"))
+    out, = capture_io { Malt::ServiceManager.send(:show_status, config) }
+
+    assert_includes out, "Redis (port #{port}): external process on port"
+  ensure
+    server.close
+  end
+
+  def test_status_reports_stopped_when_port_free_and_no_pid_file
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    server.close
+    write_ports("redis" => [port])
+
+    config = Malt::Config.new(File.join(@temp_dir, "malt.json"))
+    out, = capture_io { Malt::ServiceManager.send(:show_status, config) }
+
+    assert_includes out, "Redis (port #{port}): stopped"
+  end
+
+  def test_status_reports_running_when_service_confirms_malt_process
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    write_ports("redis" => [port])
+
+    fake = Object.new
+    def fake.running?(_config, _port, _index = nil)
+      true
+    end
+
+    config = Malt::Config.new(File.join(@temp_dir, "malt.json"))
+    out, = Malt::RedisService.stub(:new, fake) do
+      capture_io { Malt::ServiceManager.send(:show_status, config) }.first
+    end
+
+    assert_includes out, "Redis (port #{port}): running"
+  ensure
+    server.close
+  end
+
+  def test_start_returns_false_and_reports_failure_when_port_in_use
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    write_ports("php" => [port])
+
+    _, err = capture_io do
+      result = Malt::ServiceManager.start(config: File.join(@temp_dir, "malt.json"))
+      assert_equal false, result
+    end
+
+    assert_includes err, "Failed to start: PHP-FPM"
+  ensure
+    server.close
+  end
+
+  def test_service_start_returns_false_when_port_in_use
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    assert_equal false, Malt::PhpService.new.start(config_with_ports("php" => [port]))
+    assert_equal false, Malt::RedisService.new.start(config_with_ports("redis" => [port]))
+    assert_equal false, Malt::MemcachedService.new.start(config_with_ports("memcached" => [port]))
+  ensure
+    server.close
+  end
+
+  def test_display_web_server_urls_skips_external_process
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    write_ports("httpd" => [port])
+
+    config = Malt::Config.new(File.join(@temp_dir, "malt.json"))
+    out, = capture_io { Malt::ServiceManager.send(:display_web_server_urls, config) }
+
+    refute_includes out, "Access your site at"
+  ensure
+    server.close
+  end
+
+  private
+
+  # Start a sleep whose argv[0] mimics another service's command line
+  def spawn_as(command_line)
+    pid = Process.spawn(["/bin/sleep", command_line], "30")
+    Process.detach(pid)
+    pid
+  end
+
+  def write_safe_pid_file(config, pid)
+    path = File.join(config.var_dir, "mysql_0", "mysqld_safe.pid")
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, pid.to_s)
+    pid
+  end
+
+  def wait_for_pid_file(path)
+    50.times do
+      pid = @service.read_pid_file(path)
+      return pid if pid
+
+      sleep 0.1
+    end
+    flunk "pid file #{path} was not written"
+  end
+
+  # Run the block with PATH limited to dir (create it with only the tools the test allows)
+  def with_path(dir)
+    FileUtils.mkdir_p(dir)
+    saved = ENV["PATH"]
+    ENV["PATH"] = dir
+    yield
+  ensure
+    ENV["PATH"] = saved
+  end
+
+  def write_ports(ports)
+    File.write(File.join(@temp_dir, "malt.json"), JSON.generate({
+      "project_name" => "test_project",
+      "dependencies" => ["php@8.4"],
+      "ports" => ports,
+      "php_extensions" => []
+    }))
+  end
+
+  def config_with_ports(ports)
+    write_ports(ports)
+    Malt::Config.new(File.join(@temp_dir, "malt.json"))
+  end
+end

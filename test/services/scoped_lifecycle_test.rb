@@ -155,6 +155,8 @@ class ScopedLifecycleTest < Minitest::Test
 
   def setup
     @temp_dir = Dir.mktmpdir("malt lifecycle test")
+    @saved_registry_dir = ENV["MALT_REGISTRY_DIR"]
+    ENV["MALT_REGISTRY_DIR"] = File.join(@temp_dir, "registry")
     @config_path = File.join(@temp_dir, "malt.json")
     File.write(@config_path, JSON.generate({
       "project_name" => "lifecycle_test",
@@ -175,6 +177,7 @@ class ScopedLifecycleTest < Minitest::Test
   end
 
   def teardown
+    ENV["MALT_REGISTRY_DIR"] = @saved_registry_dir
     FileUtils.rm_rf(@temp_dir)
   end
 
