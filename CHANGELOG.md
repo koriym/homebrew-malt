@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0beta12
+
+### Upgrade Path
+- Read `HOMEBREW_PREFIX/var/malt/pids/` as well, under the same ownership and permission checks, so `malt kill` still reaches services started by 1.0.0beta10 or earlier. Without this, upgrading left already-running services with no way to force-kill them, since 1.0.0beta11 only looks at `~/.malt/pids`. The old directory is never written to, so it drains as those services are stopped.
+
+### Installation
+- Document `brew trust` for the third-party taps. Homebrew 7 refuses to load formulae from an untrusted tap, so `brew install malt` and `malt install` both fail without it.
+
 ## 1.0.0beta11
 
 ### Scoped `malt kill`
