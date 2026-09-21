@@ -21,7 +21,7 @@ If it stops at `php@7.4`, apply the fix below and re-run the same command. Alrea
 
 ### Symptom
 
-```
+```text
 ==> make
 ld: symbol(s) not found for architecture x86_64
   "_res_9_dn_expand", referenced from: _zif_dns_get_record in dns.o
@@ -50,12 +50,13 @@ cp "$f" "$f.orig"
 sed -i '' 's|    ENV.append "CFLAGS", "-std=gnu17"|    ENV.append "CFLAGS", "-std=gnu17"\
     ENV.append "LDFLAGS", "-lresolv"|' "$f"
 grep -n 'lresolv' "$f"     # expect two matches: the new line and the Xcode 15.3 workaround
-brew install --build-from-source shivammathur/php/php@7.4
+HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source shivammathur/php/php@7.4
 brew install shivammathur/extensions/xdebug@7.4    # bottle, no build
 ```
 
 Notes:
 
+- `HOMEBREW_NO_AUTO_UPDATE=1` keeps `brew install` from running an auto-update that would reset the patched tap checkout before the build starts.
 - The change lives in the tap checkout. `brew update` overwrites it. `brew reinstall php@7.4` or a rebuild after `brew update` needs the patch applied again.
 - `brew install koriym/malt/phpcomplete` afterwards succeeds because all dependencies are already installed.
 - Do not run two `brew install` for different PHP versions in parallel: build dependencies such as `bison` are locked (`process has already locked /usr/local/Cellar/bison`).
@@ -75,7 +76,8 @@ Remove the `php74` alias as well.
 ## Verify
 
 ```sh
-for v in 5.6 7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4; do
+versions=(5.6 7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4)   # drop 7.4 here if you skipped it
+for v in "${versions[@]}"; do
   "$(brew --prefix)/opt/php@$v/bin/php" -v | head -1
   "$(brew --prefix)/opt/php@$v/bin/php" -m | grep -i '^xdebug$'
 done
@@ -89,7 +91,8 @@ php -v    # the unversioned `php` formula is the latest release (8.5)
 Versions 5.6 - 8.4 are end of life or receive security patches only from upstream, and are used for compatibility testing. Pin them so `brew upgrade` leaves them alone; keep `php` (8.5) and `xdebug@8.5` unpinned to follow the latest release.
 
 ```sh
-for v in 5.6 7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4; do
+versions=(5.6 7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4)   # drop 7.4 here if you skipped it
+for v in "${versions[@]}"; do
   brew pin "php@$v" "xdebug@$v"
 done
 brew list --pinned
@@ -105,7 +108,7 @@ The aliases in `README.md` use `/opt/homebrew`. On Intel use `$(brew --prefix)`,
 
 ```sh
 alias php74='$(brew --prefix)/opt/php@7.4/bin/php'
-alias sphp74='export PATH="$(brew --prefix)/opt/php@7.4/bin:$PATH"'
+alias sphp74='export PATH="$(brew --prefix)/opt/php@7.4/bin:$(brew --prefix)/opt/php@7.4/sbin:$PATH"'
 ```
 
 ## Troubleshooting
