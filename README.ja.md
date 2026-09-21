@@ -52,6 +52,16 @@ brew install malt
 
 Homebrew 7 は信頼していないサードパーティ tap の formula を読み込まないため、`brew install malt` の前、そして `malt install` が PHP と拡張を取得する前に、上記の tap を trust しておく必要があります。
 
+### 関連: phpcomplete
+
+この tap には `phpcomplete` も含まれています。PHP 5.6 から 8.5 までの全バージョンを、それぞれの Xdebug とともに並行してインストールします。
+
+```bash
+brew install koriym/malt/phpcomplete
+```
+
+詳細は [phpcomplete/README.md](phpcomplete/README.md) を参照してください。Intel Mac では先に [INSTALL_INTEL_MAC.md](phpcomplete/INSTALL_INTEL_MAC.md)（英語）を読んでください。
+
 ## クイックスタート
 
 ### 1. プロジェクトを初期化する
