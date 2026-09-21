@@ -46,8 +46,11 @@ MaltはHomebrew formula（公式）エコシステム全体を活用し、任意
 brew tap shivammathur/php
 brew tap shivammathur/extensions
 brew tap koriym/malt
+brew trust shivammathur/php shivammathur/extensions koriym/malt
 brew install malt
 ```
+
+Homebrew 7 は信頼していないサードパーティ tap の formula を読み込まないため、`brew install malt` の前、そして `malt install` が PHP と拡張を取得する前に、上記の tap を trust しておく必要があります。
 
 ## クイックスタート
 

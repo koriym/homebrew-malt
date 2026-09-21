@@ -18,8 +18,11 @@ malt stop      # Stop this project's services
 brew tap shivammathur/php
 brew tap shivammathur/extensions
 brew tap koriym/malt
+brew trust shivammathur/php shivammathur/extensions koriym/malt
 brew install malt
 ```
+
+Homebrew 7 refuses to load formulae from an untrusted third-party tap, so the taps above have to be trusted before `brew install malt` and before `malt install` pulls PHP and its extensions.
 
 ## Quick Start
 

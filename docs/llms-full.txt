@@ -10,8 +10,11 @@ Malt creates project-specific development environments using only Homebrew. Defi
 brew tap shivammathur/php
 brew tap shivammathur/extensions
 brew tap koriym/malt
+brew trust shivammathur/php shivammathur/extensions koriym/malt
 brew install malt
 ```
+
+Homebrew 7 refuses to load formulae from an untrusted third-party tap: all three taps must be trusted before `brew install malt`, and before `malt install` pulls PHP and its extensions.
 
 ## Workflow
 

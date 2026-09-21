@@ -10,6 +10,7 @@ Malt creates project-specific development environments using only Homebrew. Defi
 brew tap shivammathur/php
 brew tap shivammathur/extensions
 brew tap koriym/malt
+brew trust shivammathur/php shivammathur/extensions koriym/malt   # Homebrew 7 refuses untrusted third-party taps
 brew install malt
 
 cd your-project
