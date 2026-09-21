@@ -38,6 +38,7 @@ If Homebrew is missing, direct the user to https://brew.sh/. If Malt is missing:
 brew tap shivammathur/php
 brew tap shivammathur/extensions
 brew tap koriym/malt
+brew trust shivammathur/php shivammathur/extensions koriym/malt
 brew install malt
 ```
 
