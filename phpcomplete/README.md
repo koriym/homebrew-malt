@@ -4,7 +4,7 @@ PHP Complete is a Homebrew formula that allows you to install multiple versions 
 
 ## Features
 
-- Installs multiple PHP versions (`5.6` to `8.4`) using the shivammathur/php tap
+- Installs multiple PHP versions (`5.6` to `8.5`) using the shivammathur/php tap
 - Installs Xdebug for all PHP versions
 - Provides a convenient way to manage PHP extensions and dependencies
 
@@ -63,6 +63,7 @@ alias php81='export PATH="/opt/homebrew/opt/php@8.1/bin:$PATH" && export PATH="/
 alias php82='export PATH="/opt/homebrew/opt/php@8.2/bin:$PATH" && export PATH="/opt/homebrew/opt/php@8.2/sbin:$PATH"'
 alias php83='export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH" && export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"'
 alias php84='export PATH="/opt/homebrew/opt/php@8.4/bin:$PATH" && export PATH="/opt/homebrew/opt/php@8.4/sbin:$PATH"'
+alias php85='export PATH="/opt/homebrew/opt/php@8.5/bin:$PATH" && export PATH="/opt/homebrew/opt/php@8.5/sbin:$PATH"'
 ```
 
 #### Step 2: Reload Shell
