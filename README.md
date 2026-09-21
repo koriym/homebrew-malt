@@ -88,7 +88,7 @@ source <(malt env)
 | `malt create` | Generate service configs in `malt/conf/` |
 | `malt start` | Start configured services |
 | `malt stop` | Stop configured services for the current project |
-| `malt kill` | Force-kill all supported service processes, regardless of project |
+| `malt kill` | Force-kill malt-started service processes only, across all projects |
 | `malt status` | Show running/stopped state per port |
 | `malt env` | Output shell env setup script |
 | `malt info` | Show project information |
