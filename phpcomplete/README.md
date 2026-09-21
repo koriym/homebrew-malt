@@ -20,6 +20,8 @@ brew install koriym/malt/phpcomplete
 
 This command will install the specified PHP versions, Xdebug, and the additional PECL packages defined in the formula.
 
+On Intel Macs, see [INSTALL_INTEL_MAC.md](INSTALL_INTEL_MAC.md) (long source builds, and a known `php@7.4` link error on older Command Line Tools).
+
 ## Customization
 
 You can customize the PHP versions and extensions installed by PHP Complete by modifying the formula file.
