@@ -52,6 +52,15 @@ brew install malt
 
 Homebrew 7 は信頼していないサードパーティ tap の formula を読み込まないため、`brew install malt` の前、そして `malt install` が PHP と拡張を取得する前に、上記の tap を trust しておく必要があります。
 
+### アップグレード
+
+```bash
+brew update
+brew upgrade malt
+```
+
+`brew upgrade` が tap を自動更新するのは 24 時間に 1 回だけなので、新しいリリースを取り込むには先に `brew update` を実行してください。
+
 ### 関連: phpcomplete
 
 この tap には `phpcomplete` も含まれています。PHP 5.6 から 8.5 までの全バージョンを、それぞれの Xdebug とともに並行してインストールします。

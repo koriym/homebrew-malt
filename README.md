@@ -24,6 +24,15 @@ brew install malt
 
 Homebrew 7 refuses to load formulae from an untrusted third-party tap, so the taps above have to be trusted before `brew install malt` and before `malt install` pulls PHP and its extensions.
 
+### Upgrading
+
+```bash
+brew update
+brew upgrade malt
+```
+
+`brew upgrade` refreshes taps on its own only once every 24 hours, so run `brew update` first to pick up a new release.
+
 ### Related: phpcomplete
 
 This tap also ships `phpcomplete`, which installs every PHP version from 5.6 to 8.5 side by side, with Xdebug for each:
